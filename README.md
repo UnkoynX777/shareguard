@@ -46,7 +46,7 @@ Chrome · Edge · Firefox
 
 [Installation guide](./docs/INSTALLATION.md)
 
-Windows 10 or 11, 64-bit. Chrome 116+, current Edge, or Firefox 128+. Official files are only on that GitHub Release. `SHA256SUMS.txt` is there if you want to check a download. The installer is not code-signed.
+Windows 10 or 11, 64-bit. Chrome 116+, current Edge, or Firefox 128+. Official files are only on that GitHub Release. `SHA256SUMS.txt` is there if you want to check a download. ShareGuard uses the [SignPath Foundation](https://signpath.org) for code signing.
 
 ## What you hear and what viewers hear
 

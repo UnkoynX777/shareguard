@@ -46,7 +46,7 @@ Chrome · Edge · Firefox
 
 [Guia de instalação](./docs/INSTALLATION.pt-BR.md)
 
-Windows 10 ou 11, 64 bits. Chrome 116 ou mais recente, Edge atual, ou Firefox 128 ou mais recente. Os arquivos oficiais estão só nessa Release do GitHub. `SHA256SUMS.txt` serve para conferir o download. O instalador não tem assinatura de código.
+Windows 10 ou 11, 64 bits. Chrome 116 ou mais recente, Edge atual, ou Firefox 128 ou mais recente. Os arquivos oficiais estão só nessa Release do GitHub. `SHA256SUMS.txt` serve para conferir o download. O ShareGuard usa a [SignPath Foundation](https://signpath.org) para assinatura de código.
 
 ## O que você ouve e o que os outros ouvem
 

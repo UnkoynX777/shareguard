@@ -32,7 +32,7 @@ The setup does not need an administrator account. It installs the native helper 
 
 On the last page, ShareGuard tells you the extension is still required. Leave **Open the installation guide** selected if you want this page again.
 
-The installer is not code-signed. Windows SmartScreen can say it protected your PC. Official builds are only the files on the GitHub Release above. If you want to check the file before you run it, compare its SHA-256 with `SHA256SUMS.txt` from that same release:
+ShareGuard uses the [SignPath Foundation](https://signpath.org) for code signing. Windows SmartScreen can still say it protected your PC until that signature is familiar. Official builds are only the files on the GitHub Release above. If you want to check the file before you run it, compare its SHA-256 with `SHA256SUMS.txt` from that same release:
 
 ```powershell
 Get-FileHash .\ShareGuard-Setup-vX.Y.Z-x64.exe -Algorithm SHA256

@@ -32,7 +32,7 @@ O setup não precisa de conta de administrador. Ele instala o helper nativo para
 
 Na última página, o ShareGuard avisa que a extensão ainda é necessária. Deixe **Open the installation guide** marcado se quiser abrir esta página de novo.
 
-O instalador não tem assinatura de código. O Windows SmartScreen pode dizer que protegeu o PC. As builds oficiais são só os arquivos da Release do GitHub acima. Para conferir o arquivo antes de executar, compare o SHA-256 com o `SHA256SUMS.txt` dessa mesma release:
+O ShareGuard usa a [SignPath Foundation](https://signpath.org) para assinatura de código. O Windows SmartScreen ainda pode dizer que protegeu o PC até essa assinatura ficar conhecida. As builds oficiais são só os arquivos da Release do GitHub acima. Para conferir o arquivo antes de executar, compare o SHA-256 com o `SHA256SUMS.txt` dessa mesma release:
 
 ```powershell
 Get-FileHash .\ShareGuard-Setup-vX.Y.Z-x64.exe -Algorithm SHA256
