@@ -38,11 +38,17 @@ Free and open source. Processing stays on your computer. There is no account and
 
 ## Download
 
-[Download ShareGuard for Windows](https://github.com/UnkoynX777/shareguard/releases/latest)
+Get the latest ShareGuard release for Windows.
 
-The file to run is `ShareGuard-Setup-vX.Y.Z-x64.exe`. It installs the native helper for the current Windows user. It does not install the browser extension, and the extension is not in a browser store yet. The same release includes `shareguard-chromium-vX.Y.Z.zip` and `shareguard-firefox-vX.Y.Z.zip`. Check `SHA256SUMS.txt` before you run the installer. The installer is not code-signed.
+[Download ShareGuard](https://github.com/UnkoynX777/shareguard/releases/latest)
 
-Windows 10 or 11, 64-bit. Chrome 116+, current Chromium Edge, or Firefox 128+. See [Installation](./docs/INSTALLATION.md).
+Run `ShareGuard-Setup-vX.Y.Z-x64.exe`. It installs the native helper and copies the Chrome and Edge extension into a fixed folder for your user. After installing, add the extension in the browser:
+
+Chrome · Edge · Firefox
+
+[Installation guide](./docs/INSTALLATION.md)
+
+Windows 10 or 11, 64-bit. Chrome 116+, current Edge, or Firefox 128+. Official files are only on that GitHub Release. `SHA256SUMS.txt` is there if you want to check a download. The installer is not code-signed.
 
 ## What you hear and what viewers hear
 
@@ -67,22 +73,21 @@ Those names are examples. ShareGuard does not treat any executable specially. It
 
 ## Quick start
 
-1. Download the installer from the [latest release](https://github.com/UnkoynX777/shareguard/releases/latest) and run it.
-2. Quit Chrome, Edge, and Firefox completely, then open the browser you use.
-3. Load the extension package from that same release. Chrome and Edge use the Chromium zip. Firefox uses the Firefox zip as a temporary add-on. Steps are in [Installation](./docs/INSTALLATION.md).
-4. Open the ShareGuard popup. Native should read Connected.
-5. Turn on ShareGuard Protection and set unwanted applications to Blocked.
-6. Start a screen share that includes audio.
+1. Download and install ShareGuard from the [latest release](https://github.com/UnkoynX777/shareguard/releases/latest).
+2. Add the browser extension. [Installation guide](./docs/INSTALLATION.md).
+3. Open ShareGuard. **Native** should read **Connected**.
+4. Turn on protection and set unwanted applications to Blocked.
+5. Start a screen share that includes audio.
 
 ## Browser support
 
-| Browser | Package | Notes |
+| Browser | Extension | Installation |
 | --- | --- | --- |
-| Google Chrome 116+ | `shareguard-chromium` | Load unpacked. Extension ID `bdkcdhphggeglifemnakdlcfbhcoempk` |
-| Microsoft Edge | `shareguard-chromium` | Same package as Chrome |
-| Firefox 128+ | `shareguard-firefox` | Temporary add-on until it is signed by Mozilla. Firefox ESR 115 is not supported |
+| Google Chrome | Chromium | Manual |
+| Microsoft Edge | Chromium | Manual |
+| Mozilla Firefox | Firefox | Signed XPI |
 
-Chrome Web Store, Edge Add-ons, and Firefox Add-ons listings do not exist yet.
+Chrome and Edge use Developer mode and Load unpacked on the folder the setup installs. Firefox uses the signed XPI from the same release, when that file is published. Firefox ESR 115 is not supported. Details are in the [installation guide](./docs/INSTALLATION.md).
 
 ## How to use
 
@@ -126,13 +131,17 @@ npm run build
 
 ## Troubleshooting
 
-[Native helper unavailable](./docs/TROUBLESHOOTING.md), a missing application, Firefox closing the add-on, and the Windows version message are covered in [Troubleshooting](./docs/TROUBLESHOOTING.md). Security reports go to [SECURITY.md](./SECURITY.md), not to a public issue.
+If **Native** stays **Unavailable**, start with [Troubleshooting](./docs/TROUBLESHOOTING.md). Security reports go to [SECURITY.md](./SECURITY.md), not to a public issue.
 
 ## Roadmap
 
-Available now: Chrome, Edge, and Firefox packages, per-application filtering, and a per-user native installer.
+Available now: per-application filtering, a per-user Windows setup, and browser extension packages from GitHub Releases.
 
-Not available yet: Chrome Web Store, Edge Add-ons, and Firefox Add-ons listings. Code signing of the installer. A Firefox install that survives a browser restart without Mozilla signing.
+Not available yet: code signing of the installer. A Firefox package is published only after Mozilla signs it for that release.
+
+## Why isn't ShareGuard in the browser stores?
+
+ShareGuard is distributed directly through GitHub. The extension source and the release packages are public in this repository.
 
 ## License
 

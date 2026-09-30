@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   release:
+    if: github.repository == 'UnkoynX777/shareguard' && github.ref_type == 'tag'
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -20,11 +21,15 @@ jobs:
         run: |
           $tag = "${{ github.ref_name }}"
           if ($tag.StartsWith("v")) { $tag = $tag.Substring(1) }
-          ./scripts/check-version.ps1 -Expected $tag
-
-      - name: Build native helper
-        shell: pwsh
-        run: ./scripts/build-native.ps1
+          if ($tag -notmatch '^(?<ver>[0-9]+\.[0-9]+\.[0-9]+)(?:-.+)?$') {
+            throw "Tag must look like v0.3.0 or v0.3.0-beta.1"
+          }
+          ./scripts/check-version.ps1 -Expected $Matches.ver
+          if ($tag -ne $Matches.ver) {
+            "prerelease=true" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          } else {
+            "prerelease=false" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          }
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -41,6 +46,25 @@ jobs:
           npm test
           npm run build
           npm run lint:firefox
+
+      - name: Package Chromium extension
+        shell: pwsh
+        run: ./scripts/package-release.ps1
+
+      - name: Validate packages
+        shell: pwsh
+        run: ./scripts/validate-packages.ps1
+
+      - name: Sign Firefox extension
+        shell: pwsh
+        env:
+          AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+          AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        run: ./scripts/sign-firefox.ps1
+
+      - name: Build native helper
+        shell: pwsh
+        run: ./scripts/build-native.ps1
 
       - name: Install Inno Setup
         shell: pwsh
@@ -68,32 +92,42 @@ jobs:
           $version = "$(./scripts/check-version.ps1)".Trim()
           $out = Join-Path $env:RUNNER_TEMP "shareguard-publish"
           New-Item -ItemType Directory -Force -Path $out | Out-Null
-          Copy-Item ".\installer\Output\ShareGuard-Setup-v$version-x64.exe" $out
-          Copy-Item ".\release\shareguard-chromium.zip" (Join-Path $out "shareguard-chromium-v$version.zip")
-          Copy-Item ".\release\shareguard-firefox.zip" (Join-Path $out "shareguard-firefox-v$version.zip")
+          $setup = ".\installer\Output\ShareGuard-Setup-v$version-x64.exe"
+          $chromium = ".\release\ShareGuard-Chromium-v$version.zip"
+          if (-not (Test-Path $setup)) { throw "Installer was not produced." }
+          if (-not (Test-Path $chromium)) { throw "Chromium package was not produced." }
+          Copy-Item $setup $out
+          Copy-Item $chromium $out
+          $firefox = ".\release\ShareGuard-Firefox-v$version.xpi"
+          $firefoxNote = "Firefox: this release does not include a signed Firefox extension. The user Firefox package is unavailable until Mozilla unlisted signing succeeds."
+          if (Test-Path $firefox) {
+            Copy-Item $firefox $out
+            $firefoxNote = "Firefox: download ``ShareGuard-Firefox-v$version.xpi`` and install it from a file. See the installation guide."
+          }
           $sums = foreach ($file in Get-ChildItem $out -File) {
             $hash = (Get-FileHash -Algorithm SHA256 $file.FullName).Hash.ToLowerInvariant()
             "$hash  $($file.Name)"
           }
           Set-Content -Encoding ascii -Path (Join-Path $out "SHA256SUMS.txt") -Value $sums
-          $ref = $env:GITHUB_REF_NAME
+          $guide = "https://github.com/UnkoynX777/shareguard/blob/${{ github.sha }}/docs/INSTALLATION.md"
           $lines = @(
-            "ShareGuard $ref"
+            "ShareGuard ${{ github.ref_name }}"
             ""
             "## Installation"
-            "Download ``ShareGuard-Setup-v$version-x64.exe`` below and run it."
-            "It installs the native helper for the current user and registers Native Messaging for Chrome, Edge, and Firefox."
             ""
-            "The extension is not in a browser store yet."
-            "``shareguard-chromium-v$version.zip`` is the unpacked package for Chrome and Edge."
-            "``shareguard-firefox-v$version.zip`` is the temporary add-on package for Firefox."
+            "1. Download ``ShareGuard-Setup-v$version-x64.exe``."
+            "2. Install ShareGuard."
+            "3. Add the browser extension."
             ""
-            "Verify ``SHA256SUMS.txt`` before you run the installer."
-            "The installer is not code-signed."
+            "Chrome and Edge load the folder the installer copies to ``%LOCALAPPDATA%\ShareGuard\Extension\Chromium``. Developer mode and Load unpacked are required because the extension is distributed from GitHub. ``ShareGuard-Chromium-v$version.zip`` is the same extension if you want a separate copy."
             ""
-            "See CHANGELOG.md for the notes on this version."
+            $firefoxNote
+            ""
+            "Guide: $guide"
+            ""
+            "Official files come only from this GitHub Release. Compare ``SHA256SUMS.txt`` if you want to check a download. The installer is not code-signed, so Windows SmartScreen may warn before you run it."
           )
-          Set-Content -Encoding utf8 -Path (Join-Path $out "notes.md") -Value $lines
+          Set-Content -Encoding utf8NoBOM -Path (Join-Path $out "notes.md") -Value $lines
           "out=$out" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
       - name: Publish GitHub Release
@@ -101,11 +135,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          $files = @(Get-ChildItem $env:out -File | Where-Object { $_.Name -ne "notes.md" } | ForEach-Object { $_.FullName })
+          if (-not ($files | Where-Object { $_ -like "*ShareGuard-Setup-*" })) { throw "Release is missing the installer." }
+          if (-not ($files | Where-Object { $_ -like "*ShareGuard-Chromium-*" })) { throw "Release is missing the Chromium package." }
+          $prerelease = @()
+          if ($env:prerelease -eq "true") { $prerelease = @("--prerelease") }
           gh release create "${{ github.ref_name }}" `
             --repo "${{ github.repository }}" `
             --title "ShareGuard ${{ github.ref_name }}" `
             --notes-file "$env:out\notes.md" `
-            "$env:out\ShareGuard-Setup-*.exe" `
-            "$env:out\shareguard-chromium-*.zip" `
-            "$env:out\shareguard-firefox-*.zip" `
-            "$env:out\SHA256SUMS.txt"
+            @prerelease `
+            @files

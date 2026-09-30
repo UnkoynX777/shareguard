@@ -1,77 +1,131 @@
-# Installation
+# Installing ShareGuard
 
-ShareGuard on Windows has two parts. The installer sets up the native helper. The browser extension is a separate package. The extension is not in the Chrome Web Store, Edge Add-ons, or Firefox Add-ons.
+ShareGuard on Windows has two parts.
 
-## Requirements
+1. ShareGuard Native, installed by the Windows setup.
+2. The ShareGuard browser extension, added in the browser afterward.
 
-- Windows 10 or 11, 64-bit. Process loopback is attempted from build 19041. Microsoft documents that API from build 20348. If Windows refuses it while applications are blocked, ShareGuard removes the shared audio instead of sending the original mix.
-- Google Chrome 116 or newer, or current Chromium-based Microsoft Edge, or Firefox 128 or newer. Firefox ESR 115 cannot load the page hook.
+The setup configures the native component. It does not install the extension inside Chrome, Edge, or Firefox. The extension is distributed from GitHub, so the browser asks you to add it yourself.
 
-## Download
+## Before you start
 
-Open the [latest release](https://github.com/UnkoynX777/shareguard/releases/latest).
+- Windows 10 or 11, 64-bit.
+- Google Chrome 116 or newer, current Microsoft Edge, or Firefox 128 or newer.
 
-- `ShareGuard-Setup-vX.Y.Z-x64.exe` installs the native helper.
-- `shareguard-chromium-vX.Y.Z.zip` is the extension for Chrome and Edge.
-- `shareguard-firefox-vX.Y.Z.zip` is the extension for Firefox.
-- `SHA256SUMS.txt` lists the SHA-256 hashes.
+Firefox ESR 115 is not supported.
 
-The installer is not code-signed. Windows SmartScreen can warn about an unsigned file. Check the hash before you run it.
+Download only from [github.com/UnkoynX777/shareguard/releases](https://github.com/UnkoynX777/shareguard/releases).
 
-## Install the helper
+## Step 1 — Install ShareGuard
 
-Run `ShareGuard-Setup-vX.Y.Z-x64.exe`. It does not ask for an administrator account. It copies `shareguard-native.exe` to `%LOCALAPPDATA%\ShareGuard` and registers the Native Messaging host for the current user:
+1. Open the [latest release](https://github.com/UnkoynX777/shareguard/releases/latest).
+2. Download `ShareGuard-Setup-vX.Y.Z-x64.exe`.
+3. Run it and finish the setup.
 
-- Chrome: `HKCU\Software\Google\Chrome\NativeMessagingHosts\com.shareguard.native`
-- Edge: `HKCU\Software\Microsoft\Edge\NativeMessagingHosts\com.shareguard.native`
-- Firefox: `HKCU\Software\Mozilla\NativeMessagingHosts\com.shareguard.native`
+The setup does not need an administrator account. It installs the native helper for the current Windows user and copies the Chrome and Edge extension files to:
 
-Chrome and Edge share one manifest (`allowed_origins`). Firefox uses another (`allowed_extensions`) and the same executable. Close Chrome, Edge, and Firefox completely after installation, then open them again.
+```text
+%LOCALAPPDATA%\ShareGuard\Extension\Chromium
+```
 
-## Install the extension
+On the last page, ShareGuard tells you the extension is still required. Leave **Open the installation guide** selected if you want this page again.
 
-### Chrome or Edge
+The installer is not code-signed. Windows SmartScreen can say it protected your PC. Official builds are only the files on the GitHub Release above. If you want to check the file before you run it, compare its SHA-256 with `SHA256SUMS.txt` from that same release:
 
-1. Unzip `shareguard-chromium-vX.Y.Z.zip`.
-2. Open `chrome://extensions` or `edge://extensions`.
-3. Turn on Developer mode.
-4. Choose Load unpacked and select the unzipped folder.
+```powershell
+Get-FileHash .\ShareGuard-Setup-vX.Y.Z-x64.exe -Algorithm SHA256
+```
 
-The Chromium extension ID is `bdkcdhphggeglifemnakdlcfbhcoempk`. The native host allows that ID. Loading a rebuilt copy that does not contain the same manifest key will not connect.
+Do not run a setup that came from somewhere else because a warning appeared, and do not run one that came from somewhere else because the warning did not appear.
+
+After setup, quit Chrome, Edge, and Firefox completely, including the tray icon, then open the browser again.
+
+## Step 2 — Install the browser extension
+
+### Chrome
+
+Because ShareGuard is distributed directly through GitHub instead of a browser store, Chrome requires Developer mode to load the extension manually.
+
+1. Open `chrome://extensions`.
+2. Turn on **Developer mode**.
+3. Click **Load unpacked**.
+4. Select this folder:
+
+```text
+%LOCALAPPDATA%\ShareGuard\Extension\Chromium
+```
+
+The Start menu entry **ShareGuard → Install Browser Extension** opens that folder. Select the folder itself. Do not select a zip file.
+
+5. Pin ShareGuard to the toolbar.
+6. Open ShareGuard.
+
+Keep that folder. If you delete it, Chrome no longer has the extension files.
+
+`ShareGuard-Chromium-vX.Y.Z.zip` on the release is the same extension. Extract it first. After extraction, the folder `ShareGuard-Chromium` contains `manifest.json`. Load that folder. Do not load the zip.
+
+### Edge
+
+Edge uses the same Chromium extension. There is no separate Edge download.
+
+1. Install ShareGuard Setup.
+2. Open `edge://extensions`.
+3. Turn on **Developer mode**.
+4. Click **Load unpacked**.
+5. Select `%LOCALAPPDATA%\ShareGuard\Extension\Chromium`.
+6. Pin ShareGuard.
 
 ### Firefox
 
-Firefox removes temporary add-ons when it exits. Until the package is signed by Mozilla, that is the available install path.
+Firefox stable does not keep an unsigned extension after you install it. The user package is `ShareGuard-Firefox-vX.Y.Z.xpi` from the GitHub Release. That file is signed by Mozilla for distribution from GitHub. It is not a public store listing.
 
-1. Unzip `shareguard-firefox-vX.Y.Z.zip`.
-2. Open `about:debugging#/runtime/this-firefox`.
-3. Choose Load Temporary Add-on and select `manifest.json` inside the unzipped folder.
+If the release notes say the Firefox package is unavailable, there is no Firefox file to install for that version.
 
-The add-on ID is `shareguard@shareguard.local`. Load the add-on again after each Firefox restart.
+1. Install ShareGuard Setup.
+2. Download `ShareGuard-Firefox-vX.Y.Z.xpi` from the same release as the setup.
+3. Open Firefox.
+4. Open **Add-ons and themes** (`about:addons`).
+5. Open the settings menu (the gear).
+6. Choose **Install Add-on From File**.
+7. Select `ShareGuard-Firefox-vX.Y.Z.xpi`.
+8. Click **Add**.
 
-## First use
+Do not load a zip, and do not use a temporary add-on, for a normal install.
 
-1. Open the ShareGuard popup.
-2. Native should read Connected. If it reads Unavailable, see [TROUBLESHOOTING.md](./TROUBLESHOOTING.md).
-3. Turn on ShareGuard Protection.
-4. Set the applications you do not want viewers to hear to Blocked. A new application stays Allowed until you block its executable.
-5. Start a screen share that includes audio.
+## Step 3 — Verify ShareGuard
 
-Blocked applications stay audible on your computer. They are removed from the audio sent to the site. The video is unchanged. Closing the popup does not stop the share.
+Open the ShareGuard extension.
 
-If the share has no audio track, ShareGuard leaves the stream alone. It does not add audio.
+The **Native** line should read **Connected**.
 
-## Upgrade
+If you see that, installation is complete.
 
-Download the new release, run the new installer, and load the matching extension package. Rules stay in the browser (`storage.local`). They are not stored by the installer.
+Turn on protection. The line reads **Protection enabled**. Sharing reads **Not sharing** until a screen share starts, then **Active**.
 
-Restart the browsers after replacing the helper. A browser that already launched the old executable keeps that process until it exits.
+## Updating
 
-## Uninstall
+Download the newer `ShareGuard-Setup-vX.Y.Z-x64.exe` from the [latest release](https://github.com/UnkoynX777/shareguard/releases/latest) and run it. It replaces the native helper and the files in `%LOCALAPPDATA%\ShareGuard\Extension\Chromium`. That path does not change with the version number, so Chrome and Edge keep pointing at the same folder.
 
-Use Windows Settings, Apps, ShareGuard. That removes the helper, the Native Messaging manifests, and the Chrome, Edge, and Firefox registry values for the current user.
+Then open `chrome://extensions` or `edge://extensions`, find ShareGuard, and click **Reload**. Restart the browser if it was already running during setup.
 
-Remove the extension yourself:
+Your block list stays in the browser.
 
-- Chrome or Edge: `chrome://extensions` or `edge://extensions`, then Remove.
-- Firefox: close Firefox. A temporary add-on is already gone on exit.
+Firefox does not update from that folder. Download the newer `ShareGuard-Firefox-vX.Y.Z.xpi` from the same release and install it from a file over the previous add-on.
+
+There is no separate updater.
+
+## Uninstalling
+
+Use Windows Settings, Apps, ShareGuard. You can also use **ShareGuard → Uninstall ShareGuard** in the Start menu.
+
+That removes the native helper, the Native Messaging registration for Chrome, Edge, and Firefox, the extension files under `%LOCALAPPDATA%\ShareGuard\Extension`, and the Start menu shortcuts.
+
+Chrome or Edge can still list ShareGuard after that, because the setup does not edit the browser profile. Open the extensions page and remove ShareGuard there. Firefox: remove it from **Add-ons and themes**.
+
+## Troubleshooting
+
+See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md).
+
+## Why isn't ShareGuard in the browser stores?
+
+ShareGuard is distributed directly through GitHub. The extension source and the release packages are public in this repository.

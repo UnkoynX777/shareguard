@@ -45,15 +45,9 @@ Details are in [docs/BUILDING.md](./docs/BUILDING.md) and [docs/DEVELOPMENT.md](
 
 ## Version
 
-`0.3.0` is recorded in five places. `scripts/check-version.ps1` fails when they differ.
+`VERSION` is the source of truth. `scripts/apply-version.ps1` copies it into the manifest, package, CMake project, native protocol version, and installer. `scripts/check-version.ps1` fails when they differ.
 
-- `extension/manifests/manifest.base.json`
-- `extension/package.json`
-- `native/CMakeLists.txt`
-- `native/src/messaging/Protocol.hpp` (`kNativeVersion`)
-- `installer/shareguard.iss` (`AppVersion`)
-
-Release tags look like `v0.3.0` and must match that number.
+Release tags look like `v0.3.0` and must match that number. `v0.3.0-beta.1` is a pre-release of the same `VERSION`.
 
 ## Style
 

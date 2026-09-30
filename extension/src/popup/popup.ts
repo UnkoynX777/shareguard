@@ -11,6 +11,7 @@ const list = document.querySelector<HTMLElement>("#list");
 const search = document.querySelector<HTMLInputElement>("#search");
 const protectionToggle = document.querySelector<HTMLInputElement>("#protection-toggle");
 const showAll = document.querySelector<HTMLInputElement>("#show-all");
+const guide = document.querySelector<HTMLElement>("#guide");
 
 let current: PopupSnapshot | null = null;
 const port = browserAdapter().connect("popup");
@@ -68,6 +69,7 @@ function render(): void {
   sharingLabel.textContent = current.status.sharing ? "Active" : "Not sharing";
   blockedLabel.textContent = String(rules.blockedApplications.length);
   message.textContent = current.status.lastError;
+  if (guide) guide.hidden = current.status.nativeConnected;
   if (protectionToggle) protectionToggle.checked = rules.protectionEnabled;
   if (showAll) showAll.checked = rules.showAllProcesses;
   list.replaceChildren();
@@ -78,7 +80,7 @@ function render(): void {
   if (!list.childElementCount) {
     const empty = document.createElement("p");
     empty.className = "empty";
-    empty.textContent = current.status.nativeConnected ? "No matching applications" : "Native helper unavailable";
+    empty.textContent = current.status.nativeConnected ? "No matching applications" : "Native helper not installed";
     list.append(empty);
   }
 }

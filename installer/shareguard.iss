@@ -4,6 +4,7 @@
 #define HostName "com.shareguard.native"
 #define ExtensionId "bdkcdhphggeglifemnakdlcfbhcoempk"
 #define FirefoxId "shareguard@shareguard.local"
+#define InstallGuide "https://github.com/UnkoynX777/shareguard/blob/main/docs/INSTALLATION.md"
 
 [Setup]
 AppId={{A7E3C1D4-6B58-4F0E-9C2A-1D5E8F0A3B71}
@@ -14,6 +15,7 @@ AppPublisherURL=https://github.com/UnkoynX777/shareguard
 AppSupportURL=https://github.com/UnkoynX777/shareguard/issues
 AppUpdatesURL=https://github.com/UnkoynX777/shareguard/releases/latest
 DefaultDirName={localappdata}\ShareGuard
+DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64os
@@ -26,16 +28,26 @@ WizardStyle=modern
 
 [Files]
 Source: "..\native\build\Release\shareguard-native.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\extension\dist\chromium\*"; DestDir: "{app}\Extension\Chromium"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.map,*.ts,*.tsx"
 
 [Registry]
 Root: HKCU; Subkey: "Software\Google\Chrome\NativeMessagingHosts\{#HostName}"; ValueType: string; ValueName: ""; ValueData: "{app}\{#HostName}.chromium.json"; Flags: uninsdeletekey
 Root: HKCU; Subkey: "Software\Microsoft\Edge\NativeMessagingHosts\{#HostName}"; ValueType: string; ValueName: ""; ValueData: "{app}\{#HostName}.chromium.json"; Flags: uninsdeletekey
 Root: HKCU; Subkey: "Software\Mozilla\NativeMessagingHosts\{#HostName}"; ValueType: string; ValueName: ""; ValueData: "{app}\{#HostName}.firefox.json"; Flags: uninsdeletekey
 
+[Icons]
+Name: "{group}\{#AppName}"; Filename: "{win}\explorer.exe"; Parameters: "{#InstallGuide}"
+Name: "{group}\Install Browser Extension"; Filename: "{win}\explorer.exe"; Parameters: """{app}\Extension\Chromium"""
+Name: "{group}\Uninstall {#AppName}"; Filename: "{uninstallexe}"
+
+[Run]
+Filename: "{#InstallGuide}"; Description: "Open the installation guide"; Flags: postinstall shellexec nowait skipifsilent
+
 [UninstallDelete]
 Type: files; Name: "{app}\{#HostName}.json"
 Type: files; Name: "{app}\{#HostName}.chromium.json"
 Type: files; Name: "{app}\{#HostName}.firefox.json"
+Type: filesandordirs; Name: "{app}\Extension"
 
 [Code]
 function BrowserFile(const RelativePath: String): Boolean;
@@ -102,4 +114,17 @@ procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
     WriteNativeManifests();
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if CurPageID = wpFinished then
+  begin
+    WizardForm.FinishedHeadingLabel.Caption := 'ShareGuard was installed successfully.';
+    WizardForm.FinishedLabel.Caption :=
+      'One final step: add the ShareGuard extension to your browser.' + #13#10 + #13#10 +
+      'Chrome and Edge load this folder with Developer mode and Load unpacked:' + #13#10 +
+      ExpandConstant('{app}\Extension\Chromium') + #13#10 + #13#10 +
+      'Firefox uses the signed extension from the GitHub release. The installation guide explains both.';
+  end;
 end;

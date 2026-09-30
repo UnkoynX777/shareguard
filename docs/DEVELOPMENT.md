@@ -10,7 +10,7 @@ extension/src       shared extension code
 extension/manifests manifest.base.json plus Chromium and Firefox overrides
 extension/scripts   esbuild and manifest merge
 installer           Inno Setup script
-scripts             native build, version check, dev host registration
+scripts             native build, version check, release packaging, dev host registration
 ```
 
 `extension/src/platform/browser` is the browser boundary. Chrome and Edge use `ChromiumAdapter`. Firefox uses `FirefoxAdapter`. There is no separate Edge adapter.
@@ -37,9 +37,11 @@ That removes the three registry keys, the JSON manifests, and `%LOCALAPPDATA%\Sh
 
 ## Load the extension
 
-Chrome and Edge: open `chrome://extensions` or `edge://extensions`, enable Developer mode, and load `extension/dist/chromium`.
+Chrome and Edge, for development: open `chrome://extensions` or `edge://extensions`, enable Developer mode, and load `extension/dist/chromium`.
 
-Firefox: `npm run firefox` builds the Firefox package and runs `web-ext`. Or load `extension/dist/firefox/manifest.json` from `about:debugging` as a temporary add-on. Firefox drops that add-on on exit.
+The user install loads `%LOCALAPPDATA%\ShareGuard\Extension\Chromium` instead. Do not point a browser at `extension/dist` and at the installed folder at the same time unless you mean to test both.
+
+Firefox, for development: `npm run firefox` builds the Firefox package and runs `web-ext`. Or load `extension/dist/firefox/manifest.json` from `about:debugging` as a temporary add-on. Firefox drops that add-on on exit. That path is not the user install. Users install `ShareGuard-Firefox-vX.Y.Z.xpi` from a GitHub Release after Mozilla has signed it.
 
 `npm run dev:chromium` and `npm run dev:firefox` rebuild while you edit. Reload the extension in the browser after a rebuild. Restart the browser after you replace the native executable.
 

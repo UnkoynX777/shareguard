@@ -1,8 +1,8 @@
 import esbuild from "esbuild";
-import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { chromiumExtensionId } from "./extension-id.mjs";
 
 const extensionRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const projectRoot = path.resolve(extensionRoot, "..");
@@ -35,6 +35,30 @@ function merge(base, override) {
   return output;
 }
 
+function issDefine(name) {
+  const iss = fs.readFileSync(path.join(projectRoot, "installer", "shareguard.iss"), "utf8");
+  const match = new RegExp(`#define ${name} "([^"]+)"`).exec(iss);
+  if (!match) throw new Error(`installer/shareguard.iss is missing #define ${name}`);
+  return match[1];
+}
+
+function assertIdentity(target, manifest) {
+  if (target === "chromium") {
+    const expected = issDefine("ExtensionId");
+    const actual = chromiumExtensionId(manifest.key);
+    if (actual !== expected) {
+      throw new Error(`Chromium extension ID ${actual} does not match allowed_origins ID ${expected}`);
+    }
+  }
+  if (target === "firefox") {
+    const expected = issDefine("FirefoxId");
+    const actual = manifest.browser_specific_settings?.gecko?.id;
+    if (actual !== expected) {
+      throw new Error(`Firefox extension ID ${actual} does not match allowed_extensions ID ${expected}`);
+    }
+  }
+}
+
 function copyBundle(target) {
   const destination = path.join(extensionRoot, "dist", target);
   fs.mkdirSync(destination, { recursive: true });
@@ -49,24 +73,8 @@ function copyBundle(target) {
     readJson(path.join(extensionRoot, "manifests", "manifest.base.json")),
     readJson(path.join(extensionRoot, "manifests", `manifest.${target}.json`)),
   );
+  assertIdentity(target, manifest);
   fs.writeFileSync(path.join(destination, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
-}
-
-function zipTarget(target) {
-  const release = path.join(projectRoot, "release");
-  fs.mkdirSync(release, { recursive: true });
-  const zip = path.join(release, `shareguard-${target}.zip`);
-  fs.rmSync(zip, { force: true });
-  const source = path.join(extensionRoot, "dist", target);
-  execFileSync(
-    "powershell",
-    [
-      "-NoProfile",
-      "-Command",
-      `Compress-Archive -Path '${source}\\*' -DestinationPath '${zip}' -Force`,
-    ],
-    { stdio: "inherit" },
-  );
 }
 
 function removeLegacyFlatOutput() {
@@ -80,9 +88,6 @@ function removeLegacyFlatOutput() {
 function publish() {
   removeLegacyFlatOutput();
   for (const target of targets) copyBundle(target);
-  if (!watch) {
-    for (const target of targets) zipTarget(target);
-  }
 }
 
 const context = await esbuild.context({

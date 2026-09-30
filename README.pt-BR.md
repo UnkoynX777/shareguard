@@ -38,11 +38,17 @@ O ShareGuard escolhe quais aplicativos do Windows entram no áudio de um compart
 
 ## Download
 
-[Baixar o ShareGuard para Windows](https://github.com/UnkoynX777/shareguard/releases/latest)
+Baixe a última release do ShareGuard para Windows.
 
-O arquivo para executar é `ShareGuard-Setup-vX.Y.Z-x64.exe`. Ele instala o helper nativo para o usuário atual do Windows. Ele não instala a extensão, e a extensão ainda não está na loja de nenhum navegador. A mesma release inclui `shareguard-chromium-vX.Y.Z.zip` e `shareguard-firefox-vX.Y.Z.zip`. Confira `SHA256SUMS.txt` antes de executar o instalador. O instalador não tem assinatura de código.
+[Baixar o ShareGuard](https://github.com/UnkoynX777/shareguard/releases/latest)
 
-Windows 10 ou 11, 64 bits. Chrome 116 ou mais recente, Edge atual baseado em Chromium, ou Firefox 128 ou mais recente. O passo a passo está em [Instalação](./docs/INSTALLATION.md).
+Execute `ShareGuard-Setup-vX.Y.Z-x64.exe`. Ele instala o helper nativo e copia a extensão do Chrome e do Edge para uma pasta fixa do usuário. Depois, adicione a extensão no navegador:
+
+Chrome · Edge · Firefox
+
+[Guia de instalação](./docs/INSTALLATION.md)
+
+Windows 10 ou 11, 64 bits. Chrome 116 ou mais recente, Edge atual, ou Firefox 128 ou mais recente. Os arquivos oficiais estão só nessa Release do GitHub. `SHA256SUMS.txt` serve para conferir o download. O instalador não tem assinatura de código.
 
 ## O que você ouve e o que os outros ouvem
 
@@ -67,22 +73,21 @@ Esses nomes são exemplos. O ShareGuard não trata nenhum executável de forma e
 
 ## Começar
 
-1. Baixe o instalador na [última release](https://github.com/UnkoynX777/shareguard/releases/latest) e execute.
-2. Feche Chrome, Edge e Firefox por completo e abra de novo o navegador que você usa.
-3. Carregue o pacote da extensão dessa mesma release. Chrome e Edge usam o zip Chromium. O Firefox usa o zip Firefox como complemento temporário. Os passos estão em [Instalação](./docs/INSTALLATION.md).
-4. Abra o popup do ShareGuard. Native deve mostrar Connected.
-5. Ligue ShareGuard Protection e marque como Blocked o que os outros não devem ouvir.
-6. Inicie um compartilhamento que inclua áudio.
+1. Baixe e instale o ShareGuard na [última release](https://github.com/UnkoynX777/shareguard/releases/latest).
+2. Adicione a extensão no navegador. [Guia de instalação](./docs/INSTALLATION.md).
+3. Abra o ShareGuard. **Native** deve mostrar **Connected**.
+4. Ligue a proteção e marque como Blocked o que os outros não devem ouvir.
+5. Inicie um compartilhamento que inclua áudio.
 
 ## Navegadores
 
-| Navegador | Pacote | Observação |
+| Navegador | Extensão | Instalação |
 | --- | --- | --- |
-| Google Chrome 116+ | `shareguard-chromium` | Carregar sem compactar. ID `bdkcdhphggeglifemnakdlcfbhcoempk` |
-| Microsoft Edge | `shareguard-chromium` | O mesmo pacote do Chrome |
-| Firefox 128+ | `shareguard-firefox` | Complemento temporário até a assinatura da Mozilla. O Firefox ESR 115 não serve |
+| Google Chrome | Chromium | Manual |
+| Microsoft Edge | Chromium | Manual |
+| Mozilla Firefox | Firefox | XPI assinado |
 
-Ainda não há página na Chrome Web Store, na Edge Add-ons nem em addons.mozilla.org.
+Chrome e Edge usam o modo de desenvolvedor e **Load unpacked** na pasta que o instalador copia. O Firefox usa o XPI assinado da mesma release, quando esse arquivo é publicado. O Firefox ESR 115 não serve. O passo a passo está no [guia de instalação](./docs/INSTALLATION.md).
 
 ## Uso
 
@@ -126,13 +131,17 @@ npm run build
 
 ## Problemas
 
-[Helper nativo indisponível](./docs/TROUBLESHOOTING.md), aplicativo ausente, Firefox que descarta o complemento e a mensagem de versão do Windows estão em [Solução de problemas](./docs/TROUBLESHOOTING.md). Vulnerabilidades vão para [SECURITY.md](./SECURITY.md), não para uma issue pública.
+Se **Native** continuar **Unavailable**, comece por [Solução de problemas](./docs/TROUBLESHOOTING.md). Vulnerabilidades vão para [SECURITY.md](./SECURITY.md), não para uma issue pública.
 
 ## Roteiro
 
-Já existe: pacotes para Chrome, Edge e Firefox, filtro por aplicativo e instalador do helper por usuário.
+Já existe: filtro por aplicativo, instalador por usuário no Windows e pacotes da extensão nas Releases do GitHub.
 
-Ainda não existe: publicação na Chrome Web Store, Edge Add-ons e Firefox Add-ons. Assinatura de código do instalador. Instalação do Firefox que sobreviva ao fechar o navegador sem a assinatura da Mozilla.
+Ainda não existe: assinatura de código do instalador. O pacote do Firefox só entra na release depois que a Mozilla assina essa versão.
+
+## Por que o ShareGuard não está nas lojas dos navegadores?
+
+O ShareGuard é distribuído pelo GitHub. O código da extensão e os pacotes da release são públicos neste repositório.
 
 ## Licença
 

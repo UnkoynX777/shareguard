@@ -1,4 +1,4 @@
-import { FAILURE_MESSAGE, UNSUPPORTED_BROWSER_MESSAGE } from "../shared/constants";
+import { FAILURE_MESSAGE, NATIVE_NOT_INSTALLED_MESSAGE, UNSUPPORTED_BROWSER_MESSAGE } from "../shared/constants";
 import type { ExtensionPort } from "../platform/browser/BrowserAdapter";
 import { browserAdapter } from "../platform/browser/adapters";
 import { detectCapabilities } from "../platform/capabilities/detectCapabilities";
@@ -17,6 +17,7 @@ let status: ShareStatus = createStatus(rules, false, false);
 let ready: Promise<void> | null = null;
 let snapshotSeen = false;
 let lastNotifyAt = 0;
+let hostMessage = "";
 const popups = new Set<ExtensionPort>();
 
 const session = new SessionController(native, () => {
@@ -57,7 +58,8 @@ native.onDisconnect((reason) => {
   status.nativeConnected = false;
   status.capturing = false;
   const installed = /not found|forbidden|Access denied|invalid/i.test(reason);
-  status.lastError = installed ? "Native helper unavailable" : reason;
+  status.lastError = hostMessage || (installed ? NATIVE_NOT_INSTALLED_MESSAGE : reason);
+  hostMessage = "";
   if (session.sharing()) {
     session.failClosed(status.lastError || FAILURE_MESSAGE);
     notify(status.lastError);
@@ -99,7 +101,14 @@ async function handshake(): Promise<void> {
   const ack = await session.waitFor((message) => message.type === "HELLO_ACK" || message.type === "ERROR", 8000);
   if (ack.type === "ERROR") {
     status.lastError = ack.message;
-    throw new Error(ack.code === "PROTOCOL_VERSION_MISMATCH" ? ack.message : ack.message || FAILURE_MESSAGE);
+    hostMessage = ack.message;
+    throw new Error(ack.message || FAILURE_MESSAGE);
+  }
+  if (ack.type === "HELLO_ACK" && ack.nativeVersion !== adapter.extensionVersion()) {
+    hostMessage = "ShareGuard extension and native helper do not match. Install the same release for both.";
+    status.lastError = hostMessage;
+    native.disconnect();
+    throw new Error(hostMessage);
   }
   if (!snapshotSeen) {
     await session.waitFor((message) => message.type === "PROCESS_SNAPSHOT" || message.type === "ERROR", 8000);
@@ -143,7 +152,7 @@ export function startBackground(): void {
   const capabilities = detectCapabilities();
   if (!capabilities.nativeMessaging) {
     status.lastError =
-      browserAdapter().family() === "firefox" ? UNSUPPORTED_BROWSER_MESSAGE : "Native helper unavailable";
+      browserAdapter().family() === "firefox" ? UNSUPPORTED_BROWSER_MESSAGE : NATIVE_NOT_INSTALLED_MESSAGE;
   }
   browserAdapter().onConnect((port) => {
     if (port.name === "popup") {
@@ -216,7 +225,7 @@ export function startBackground(): void {
     status = createStatus(rules, false, false);
     if (!capabilities.nativeMessaging) {
       status.lastError =
-        browserAdapter().family() === "firefox" ? UNSUPPORTED_BROWSER_MESSAGE : "Native helper unavailable";
+        browserAdapter().family() === "firefox" ? UNSUPPORTED_BROWSER_MESSAGE : NATIVE_NOT_INSTALLED_MESSAGE;
     }
   });
 }

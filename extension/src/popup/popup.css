@@ -151,3 +151,11 @@ button.allow {
   color: #9f1239;
   font-size: 12px;
 }
+
+#guide {
+  margin: 6px 0 0;
+}
+
+#guide a {
+  color: #1d4f91;
+}

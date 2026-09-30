@@ -18,13 +18,16 @@ Commands below are run from the repository root unless a step says otherwise.
 powershell -ExecutionPolicy Bypass -File .\scripts\check-version.ps1
 ```
 
-This prints the shared version, currently `0.3.0`, or fails when these files disagree:
+This prints the shared version, currently `0.3.0`, or fails when these disagree with `VERSION`:
 
+- `VERSION`
 - `extension/manifests/manifest.base.json`
 - `extension/package.json`
 - `native/CMakeLists.txt`
 - `native/src/messaging/Protocol.hpp`
 - `installer/shareguard.iss`
+
+Change `VERSION`, then run `scripts/apply-version.ps1`. Do not edit the other five by hand.
 
 ## Native helper
 
@@ -64,8 +67,17 @@ npm run lint:firefox
 
 - `extension/dist/chromium`
 - `extension/dist/firefox`
-- `release/shareguard-chromium.zip`
-- `release/shareguard-firefox.zip`
+
+The build fails if the Chromium manifest key does not produce extension ID `bdkcdhphggeglifemnakdlcfbhcoempk`, or if the Firefox ID is not `shareguard@shareguard.local`. Those IDs are what the native host allows.
+
+The user Chromium zip is separate:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\package-release.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\validate-packages.ps1
+```
+
+That writes `release/ShareGuard-Chromium-v0.3.0.zip`. Inside it, `ShareGuard-Chromium/manifest.json` is the extension root. `extension/dist/firefox` stays the unsigned development build. It is not named `ShareGuard-Firefox-vX.Y.Z.xpi`.
 
 Also available: `npm run build:chromium`, `npm run build:firefox`, `npm run dev:chromium`, and `npm run dev:firefox`.
 
@@ -75,7 +87,7 @@ Also available: `npm run build:chromium`, `npm run build:firefox`, `npm run dev:
 
 ## Installer
 
-Build the native helper first. Then, with Inno Setup 6 installed:
+Build the extension and the native helper first. The script copies `extension/dist/chromium` into the setup. Then, with Inno Setup 6 installed:
 
 ```powershell
 & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" .\installer\shareguard.iss
@@ -85,11 +97,13 @@ The result is `installer\Output\ShareGuard-Setup-v0.3.0-x64.exe`. The version in
 
 ## Release build
 
-The same commands, in this order, are what the release workflow runs: version check, native build, `npm ci`, typecheck, test, `npm run build`, `npm run lint:firefox`, then `ISCC.exe`.
+The release workflow, on a tag such as `v0.3.0`, checks the version, builds the extension, packages the Chromium zip, validates IDs, signs Firefox when `AMO_JWT_ISSUER` and `AMO_JWT_SECRET` are set, builds the native helper, then compiles the setup. A tag such as `v0.3.0-beta.1` is published as a pre-release and still has to match `VERSION` `0.3.0`.
 
-A GitHub Release is created by pushing a tag such as `v0.3.0`. The tag must match the version in the files above. Published names:
+Published names:
 
 - `ShareGuard-Setup-v0.3.0-x64.exe`
-- `shareguard-chromium-v0.3.0.zip`
-- `shareguard-firefox-v0.3.0.zip`
+- `ShareGuard-Chromium-v0.3.0.zip`
+- `ShareGuard-Firefox-v0.3.0.xpi` only when Mozilla signing succeeded
 - `SHA256SUMS.txt`
+
+If the signing secrets are absent, the workflow still publishes the setup and the Chromium zip, and the release notes say the Firefox user package is unavailable. If signing is attempted and fails, the release is not created. An unsigned file is never uploaded as `ShareGuard-Firefox-vX.Y.Z.xpi`.

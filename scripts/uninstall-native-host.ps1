@@ -7,4 +7,5 @@ Remove-Item (Join-Path $dir "com.shareguard.native.json") -Force -ErrorAction Si
 Remove-Item (Join-Path $dir "com.shareguard.native.chromium.json") -Force -ErrorAction SilentlyContinue
 Remove-Item (Join-Path $dir "com.shareguard.native.firefox.json") -Force -ErrorAction SilentlyContinue
 Remove-Item (Join-Path $dir "shareguard-native.exe") -Force -ErrorAction SilentlyContinue
+Remove-Item (Join-Path $dir "Extension") -Recurse -Force -ErrorAction SilentlyContinue
 Write-Output "Removed the ShareGuard native messaging host for Chrome, Edge, and Firefox."

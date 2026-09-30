@@ -14,7 +14,9 @@ function Read-JsonVersion([string]$Path, [string]$Property) {
   return [string]$value
 }
 
+$versionFile = (Get-Content -Raw (Join-Path $root "VERSION")).Trim()
 $versions = [ordered]@{
+  "VERSION" = $versionFile
   "extension/manifests/manifest.base.json" = Read-JsonVersion (Join-Path $root "extension\manifests\manifest.base.json") "version"
   "extension/package.json" = Read-JsonVersion (Join-Path $root "extension\package.json") "version"
   "native/CMakeLists.txt" = ([regex]::Match((Get-Content -Raw (Join-Path $root "native\CMakeLists.txt")), "VERSION\s+([0-9]+\.[0-9]+\.[0-9]+)")).Groups[1].Value

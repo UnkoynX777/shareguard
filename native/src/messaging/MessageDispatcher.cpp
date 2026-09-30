@@ -17,7 +17,7 @@ void MessageDispatcher::handle(const std::string& json, const std::function<void
   if (*type == "HELLO") {
     const std::optional<int> version = jsonIntField(json, "protocolVersion");
     if (!version || *version != kProtocolVersion) {
-      send(errorJson("PROTOCOL_VERSION_MISMATCH", "ShareGuard native protocol is incompatible."));
+      send(errorJson("PROTOCOL_VERSION_MISMATCH", "ShareGuard extension and native helper do not match. Install the same release for both."));
       return;
     }
     const auto clientAt = json.find("\"client\"");

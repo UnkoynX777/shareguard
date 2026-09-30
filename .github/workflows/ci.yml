@@ -40,11 +40,22 @@ jobs:
           npm run build
           npm run lint:firefox
 
-      - name: Upload extension packages
+      - name: Package and validate
+        shell: pwsh
+        run: |
+          ./scripts/package-release.ps1
+          ./scripts/validate-packages.ps1
+
+      - name: Upload Chromium package
         uses: actions/upload-artifact@v4
         with:
-          name: extension-packages
-          path: |
-            release/shareguard-chromium.zip
-            release/shareguard-firefox.zip
+          name: chromium-package
+          path: release/ShareGuard-Chromium-*.zip
+          if-no-files-found: error
+
+      - name: Upload Firefox development build
+        uses: actions/upload-artifact@v4
+        with:
+          name: firefox-dev-build
+          path: extension/dist/firefox
           if-no-files-found: error
