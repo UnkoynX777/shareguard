@@ -1,3 +1,5 @@
+English | [Português (Brasil)](./INSTALLATION.pt-BR.md)
+
 # Installing ShareGuard
 
 ShareGuard on Windows has two parts.

@@ -1,6 +1,6 @@
-# Contributing
+English | [Português (Brasil)](./CONTRIBUTING.pt-BR.md)
 
-[English](./README.md) | [Português (Brasil)](./README.pt-BR.md)
+# Contributing
 
 ShareGuard is free and open source under the [MIT license](./LICENSE). Created and maintained by [UnkoynX777](https://github.com/UnkoynX777).
 
@@ -26,7 +26,7 @@ native/        C++20 helper
 extension/     WebExtension source and browser manifests
 installer/     Inno Setup script
 scripts/       build, version check, dev host registration
-docs/          installation, build, architecture, development, troubleshooting
+docs/          installation, build, architecture, development, troubleshooting, documentation policy
 ```
 
 ## Setup
@@ -64,4 +64,12 @@ Commits do not have to follow Conventional Commits. A short sentence that says w
 
 ## Pull requests
 
-Say what changed, why, and how you tested it. Update the docs when the install or build steps change. Update `CHANGELOG.md` under `Unreleased` when the change is user-visible.
+Say what changed, why, and how you tested it. Update the docs when the install or build steps change. Update the matching `.pt-BR.md` in the same change. Update `CHANGELOG.md` and `CHANGELOG.pt-BR.md` under `Unreleased` when the change is user-visible.
+
+## Documentation
+
+English is the canonical language. Brazilian Portuguese is the official translation.
+
+A new user-facing or contributor-facing Markdown file needs its `.pt-BR.md` file before merge. When you change the Portuguese file, update the English file if the meaning changed. The rules and the exceptions are in [docs/DOCUMENTATION.md](./docs/DOCUMENTATION.md).
+
+`scripts/check-docs.mjs` checks that each required translation exists, that the language line is present, and that relative links point at files that exist. It does not judge the wording of the translation.

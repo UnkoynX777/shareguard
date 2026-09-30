@@ -1,3 +1,5 @@
+English | [Português (Brasil)](./SUPPORT.pt-BR.md)
+
 # Support
 
 | Topic | Where |

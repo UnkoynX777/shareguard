@@ -1,3 +1,5 @@
+English | [Português (Brasil)](./README.pt-BR.md)
+
 # Native helper
 
 `shareguard-native.exe` is the Native Messaging host for Chrome, Edge, and Firefox. The executable and the protocol are the same for all three. See [Architecture](../docs/ARCHITECTURE.md) and [Building](../docs/BUILDING.md).

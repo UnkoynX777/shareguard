@@ -75,10 +75,10 @@ export class SessionController {
     this.onChange();
   }
 
-  forwardAudio(data: string): void {
+  forwardAudio(data: string, sequence = 0): void {
     if (!this.capturing) return;
     for (const client of this.clients) {
-      if (client.sessions > 0) client.port.postMessage({ type: "audio", data });
+      if (client.sessions > 0) client.port.postMessage({ type: "audio", data, sequence });
     }
   }
 
@@ -145,7 +145,7 @@ export class SessionController {
 
   private onNative(message: NativeMessage): void {
     if (message.type === "AUDIO_FRAME") {
-      this.forwardAudio(message.data);
+      this.forwardAudio(message.data, message.sequence);
       return;
     }
     if (message.type === "CAPTURE_STOPPED") this.capturing = false;

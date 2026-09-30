@@ -4,7 +4,9 @@
 #include "platform/windows/ComRuntime.hpp"
 #include "platform/windows/WindowsVersion.hpp"
 
+#include <algorithm>
 #include <cstring>
+#include <deque>
 
 namespace shareguard {
 
@@ -32,6 +34,11 @@ bool AudioEngine::start(const AudioPolicy& policy, SnapshotHandler snapshot, Fra
   }
   dirty_.store(true);
   capturing_.store(true);
+  mixedFrames_.store(0);
+  sentFrames_.store(0);
+  transportDrops_.store(0);
+  queueFrames_.store(0);
+  writer_ = std::jthread([this](std::stop_token stop) { writeLoop(stop); });
   thread_ = std::jthread([this](std::stop_token stop) { loop(stop); });
   std::unique_lock<std::mutex> lock(startMutex_);
   if (!startCv_.wait_for(lock, std::chrono::seconds(12), [&] { return startFinished_; })) {
@@ -55,9 +62,57 @@ void AudioEngine::stop() {
     thread_.request_stop();
     thread_.join();
   }
+  if (writer_.joinable()) {
+    writer_.request_stop();
+    queueReady_.notify_all();
+    writer_.join();
+  }
+  {
+    std::lock_guard<std::mutex> lock(queueMutex_);
+    queue_.clear();
+  }
+  queueFrames_.store(0);
   single_.reset();
   pool_.stop();
   sourceCount_.store(0);
+}
+
+void AudioEngine::enqueue(AudioFrame frame) {
+  const int count = frame.frameCount;
+  {
+    std::lock_guard<std::mutex> lock(queueMutex_);
+    constexpr size_t kQueueLimit = 12;
+    while (queue_.size() >= kQueueLimit) {
+      transportDrops_.fetch_add(static_cast<std::uint64_t>(queue_.front().frameCount));
+      queue_.pop_front();
+    }
+    queue_.push_back(std::move(frame));
+    int queued = 0;
+    for (const AudioFrame& item : queue_) queued += item.frameCount;
+    queueFrames_.store(queued);
+  }
+  queueReady_.notify_one();
+  mixedFrames_.fetch_add(static_cast<std::uint64_t>(count));
+}
+
+void AudioEngine::writeLoop(std::stop_token stop) {
+  while (!stop.stop_requested()) {
+    AudioFrame frame;
+    {
+      std::unique_lock<std::mutex> lock(queueMutex_);
+      queueReady_.wait(lock, stop, [&] { return !queue_.empty(); });
+      if (queue_.empty()) {
+        continue;
+      }
+      frame = std::move(queue_.front());
+      queue_.pop_front();
+      int queued = 0;
+      for (const AudioFrame& item : queue_) queued += item.frameCount;
+      queueFrames_.store(queued);
+    }
+    sentFrames_.fetch_add(static_cast<std::uint64_t>(frame.frameCount));
+    if (onFrame_) onFrame_(frame);
+  }
 }
 
 void AudioEngine::applyPolicy(const AudioPolicy& policy) {
@@ -73,10 +128,58 @@ CaptureStrategy AudioEngine::strategy() const {
   return plan_.strategy;
 }
 
+void AudioEngine::logDiagnostics(std::chrono::steady_clock::time_point& lastLog, std::uint64_t& lastCaptured,
+                                  std::uint64_t& lastMixed, std::uint64_t& lastSent) {
+  const auto now = std::chrono::steady_clock::now();
+  if (now - lastLog < std::chrono::seconds(2)) {
+    return;
+  }
+  const double seconds = std::chrono::duration<double>(now - lastLog).count();
+  lastLog = now;
+  std::uint64_t captured = 0;
+  std::uint64_t breaks = 0;
+  std::uint64_t drops = transportDrops_.load();
+  int rate = 0;
+  size_t queued = static_cast<size_t>(std::max(0, queueFrames_.load()));
+  if (single_) {
+    captured = single_->capturedFrames();
+    breaks = single_->discontinuities();
+    drops += single_->buffer().droppedFrames();
+    rate = single_->sampleRate();
+    queued += single_->buffer().available();
+  } else {
+    captured = pool_.capturedFrames();
+    breaks = pool_.discontinuities();
+    drops += pool_.droppedFrames();
+    rate = pool_.sampleRate();
+    for (AudioRingBuffer* input : pool_.buffers()) {
+      if (input) queued += input->available();
+    }
+  }
+  const auto perSecond = [&](std::uint64_t current, std::uint64_t& previous) {
+    const std::uint64_t delta = current >= previous ? current - previous : 0;
+    previous = current;
+    return seconds > 0.0 ? static_cast<int>(static_cast<double>(delta) / seconds) : 0;
+  };
+  const int captureRate = perSecond(captured, lastCaptured);
+  const std::uint64_t mixed = mixedFrames_.load();
+  const int mixedRate = perSecond(mixed, lastMixed);
+  const int sentRate = perSecond(sentFrames_.load(), lastSent);
+  const int queueMs = static_cast<int>((queued * 1000) / kCanonicalRate);
+  Logger::info("audio capture=" + std::to_string(captureRate) + "/s mixed=" + std::to_string(mixedRate) +
+               "/s sent=" + std::to_string(sentRate) + "/s queue=" + std::to_string(queueMs) +
+               "ms discontinuities=" + std::to_string(breaks) + " drops=" + std::to_string(drops) +
+               " waits=" + std::to_string(starved_.load()) + " rate=" + std::to_string(rate));
+}
+
 void AudioEngine::loop(std::stop_token stop) {
   ComRuntime com;
   bool announced = false;
-  int ticks = 0;
+  auto lastLog = std::chrono::steady_clock::now();
+  std::uint64_t lastCaptured = 0;
+  std::uint64_t lastMixed = 0;
+  std::uint64_t lastSent = 0;
+  auto lastRebuildCheck = lastLog;
   auto announce = [&](bool ok, const std::string& message) {
     if (announced) {
       return;
@@ -111,22 +214,42 @@ void AudioEngine::loop(std::stop_token stop) {
       announce(true, {});
     }
 
-    float block[kPacketFrames * 2];
     std::vector<AudioRingBuffer*> inputs;
     if (single_ && single_->running()) {
       inputs.push_back(&single_->buffer());
     } else {
       inputs = pool_.buffers();
     }
-    mixer_.mix(inputs, block, kPacketFrames);
-    if (onFrame_) {
+    AudioRingBuffer* fullest = nullptr;
+    size_t ready = 0;
+    for (AudioRingBuffer* input : inputs) {
+      if (input == nullptr) continue;
+      const size_t have = input->available();
+      if (have >= ready) {
+        ready = have;
+        fullest = input;
+      }
+    }
+    if (ready < static_cast<size_t>(kPacketFrames)) {
+      starved_.fetch_add(1);
+      if (fullest != nullptr) {
+        fullest->waitFor(static_cast<size_t>(kPacketFrames), stop, std::chrono::milliseconds(10));
+      } else {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+      }
+    } else {
+      float block[kPacketFrames * 2];
+      mixer_.mix(inputs, block, kPacketFrames);
       AudioFrame frame;
       frame.sequence = ++sequence_;
       quantizeStereo(block, kPacketFrames, frame.pcm);
-      onFrame_(frame);
+      enqueue(std::move(frame));
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
-    if (++ticks % 50 == 0 || (single_ && !single_->running() && plan_.strategy != CaptureStrategy::AllowedProcessMix)) {
+    logDiagnostics(lastLog, lastCaptured, lastMixed, lastSent);
+    const auto now = std::chrono::steady_clock::now();
+    if (now - lastRebuildCheck >= std::chrono::seconds(1) ||
+        (single_ && !single_->running() && plan_.strategy != CaptureStrategy::AllowedProcessMix)) {
+      lastRebuildCheck = std::chrono::steady_clock::now();
       dirty_.store(true);
     }
   }

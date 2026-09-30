@@ -13,6 +13,7 @@ interface PageMessage {
   enabled?: boolean;
   message?: string;
   data?: string;
+  sequence?: number;
 }
 
 const runtime = new PageAudioRuntime();
@@ -163,7 +164,7 @@ window.addEventListener("message", (event) => {
   const data = event.data as PageMessage;
   if (!data || data.channel !== PAGE_CHANNEL || data.direction !== "extension") return;
   if (data.type === PAGE_EVENT.audio && typeof data.data === "string" && shares > 0) {
-    runtime.pushBase64(data.data);
+    runtime.pushBase64(data.data, typeof data.sequence === "number" ? data.sequence : 0);
     return;
   }
   if (data.type === PAGE_EVENT.captureError) {

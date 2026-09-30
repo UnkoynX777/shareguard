@@ -1,3 +1,5 @@
+English | [Português (Brasil)](./DEVELOPMENT.pt-BR.md)
+
 # Development
 
 Build the helper and the extension first. See [BUILDING.md](./BUILDING.md).
@@ -47,7 +49,16 @@ Firefox, for development: `npm run firefox` builds the Firefox package and runs 
 
 ## Logging
 
-Pass `--debug` to the helper, or set `SHAREGUARD_DEBUG`. Logs go to stderr and to `%LOCALAPPDATA%\ShareGuard\shareguard.log`. The file is capped at about 1 MB. PCM is not logged.
+Pass `--debug` to the helper, or set `SHAREGUARD_DEBUG`. Logs go to stderr and to `%LOCALAPPDATA%\ShareGuard\shareguard.log`. The file is capped at about 1 MB. PCM is not logged. While audio is running, one `audio capture=...` line is written every two seconds. `waits` counts how often the mixer paused for a full 20 ms block. That pause is normal. `drops` and a rising `discontinuities` count are not. The page prints the browser side with `console.debug` during a share.
+
+To record the native mix before Native Messaging:
+
+```text
+shareguard-native.exe --debug --capture-wav filtered.wav --seconds 10
+shareguard-native.exe --debug --tone --capture-wav filtered.wav --seconds 10
+```
+
+`--tone` plays a 440 Hz sine from a separate process into the default render endpoint while the helper records loopback. `--block App.exe` still applies. Neither flag is used by the installed host.
 
 The popup shows the helper error text in the message line. `Native` reads `Connected` or `Unavailable`.
 

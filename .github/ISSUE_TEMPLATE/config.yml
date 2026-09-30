@@ -2,7 +2,7 @@ blank_issues_enabled: false
 contact_links:
   - name: Security vulnerability
     url: https://github.com/UnkoynX777/shareguard/security/policy
-    about: Do not open a public issue. Read SECURITY.md first.
+    about: Do not open a public issue. Read SECURITY.md first. Portuguese is welcome.
   - name: Documentation
     url: https://github.com/UnkoynX777/shareguard/tree/main/docs
     about: Installation, building, architecture, and troubleshooting.

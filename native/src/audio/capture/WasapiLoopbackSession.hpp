@@ -16,6 +16,8 @@ struct CapturedFrames {
   UINT32 frames = 0;
   bool silent = false;
   bool discontinuity = false;
+  UINT64 devicePosition = 0;
+  UINT64 qpcPosition = 0;
 };
 
 class WasapiLoopbackSession {

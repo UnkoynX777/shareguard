@@ -9,3 +9,4 @@
 - [ ] Chrome, Edge, or Firefox was tried when the change affects that browser
 - [ ] No unrelated changes
 - [ ] Docs updated when install or build steps changed
+- [ ] Documentation translations were updated when applicable

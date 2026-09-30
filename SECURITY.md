@@ -1,6 +1,10 @@
+English | [Português (Brasil)](./SECURITY.pt-BR.md)
+
 # Security
 
 ShareGuard includes a native Windows executable, a browser extension, and a Native Messaging host. Please report vulnerabilities privately.
+
+This English page is the canonical security policy. [SECURITY.pt-BR.md](./SECURITY.pt-BR.md) is the official translation and describes the same policy.
 
 ## Supported versions
 

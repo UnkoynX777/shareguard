@@ -4,6 +4,9 @@ title: "[Feature]: "
 labels:
   - enhancement
 body:
+  - type: markdown
+    attributes:
+      value: You can write this request in English or Brazilian Portuguese.
   - type: textarea
     id: problem
     attributes:

@@ -1,5 +1,5 @@
 import type { AudioRuntime } from "../audio/AudioRuntime";
-import { CAPACITY_FRAMES, HIGH_WATER_FRAMES, PREBUFFER_FRAMES, SAMPLE_RATE } from "../shared/constants";
+import { CAPACITY_FRAMES, HIGH_WATER_FRAMES, LOW_WATER_FRAMES, PREBUFFER_FRAMES, SAMPLE_RATE } from "../shared/constants";
 import { workletSource } from "../worklet/shareguard-audio-worklet";
 
 class StereoRing {
@@ -10,6 +10,7 @@ class StereoRing {
   private available = 0;
   private started = false;
   private fade = 0;
+  private dry = 0;
 
   push(interleaved: Float32Array): void {
     const frames = interleaved.length >> 1;
@@ -42,13 +43,17 @@ class StereoRing {
       this.started = true;
       this.fade = 64;
     }
-    if (this.available < frames) {
-      left.fill(0);
-      right.fill(0);
-      if (this.available === 0) this.started = false;
-      return;
+    const take = Math.min(this.available, frames);
+    if (take < frames && this.available < LOW_WATER_FRAMES) {
+      this.dry += 1;
+      if (this.dry > 8) {
+        this.started = false;
+        this.dry = 0;
+      }
+    } else {
+      this.dry = 0;
     }
-    for (let frame = 0; frame < frames; frame++) {
+    for (let frame = 0; frame < take; frame++) {
       let leftSample = this.left[this.read] ?? 0;
       let rightSample = this.right[this.read] ?? 0;
       if (this.fade > 0) {
@@ -61,7 +66,11 @@ class StereoRing {
       right[frame] = rightSample;
       this.read = (this.read + 1) % CAPACITY_FRAMES;
     }
-    this.available -= frames;
+    this.available -= take;
+    for (let frame = take; frame < frames; frame++) {
+      left[frame] = 0;
+      right[frame] = 0;
+    }
   }
 }
 
@@ -84,6 +93,20 @@ export class PageAudioRuntime implements AudioRuntime {
   private ring = new StereoRing();
   private destinations: MediaStreamAudioDestinationNode[] = [];
   private tracks = 0;
+  private pending = new Float32Array(0);
+  private phase = 0;
+  private expectedSequence = 0;
+  private sequenceGaps = 0;
+  private lastArrival = 0;
+  private intervalTotal = 0;
+  private jitterTotal = 0;
+  private intervalCount = 0;
+  private jitterMax = 0;
+  private receivedFrames = 0;
+  private workletUnderruns = 0;
+  private workletOverruns = 0;
+  private bufferedFrames = 0;
+  private lastReport = 0;
 
   isActive(): boolean {
     return this.context !== null && this.source !== null;
@@ -107,6 +130,12 @@ export class PageAudioRuntime implements AudioRuntime {
         numberOfOutputs: 1,
         outputChannelCount: [2],
       });
+      node.port.onmessage = (event: MessageEvent<{ type?: string; underruns?: number; overruns?: number; buffered?: number }>) => {
+        if (event.data?.type !== "stats") return;
+        this.workletUnderruns = event.data.underruns ?? 0;
+        this.workletOverruns = event.data.overruns ?? 0;
+        this.bufferedFrames = event.data.buffered ?? 0;
+      };
       this.worklet = node;
       this.source = node;
     } catch {
@@ -141,14 +170,30 @@ export class PageAudioRuntime implements AudioRuntime {
     return track;
   }
 
-  pushBase64(base64: string): void {
+  pushBase64(base64: string, sequence = 0): void {
     if (!this.source || this.tracks === 0) return;
-    const samples = this.resample(decodeS16Le(base64));
-    if (this.worklet) {
-      this.worklet.port.postMessage(samples);
-      return;
+    const now = performance.now();
+    if (sequence > 0) {
+      if (this.expectedSequence > 0 && sequence !== this.expectedSequence) {
+        this.sequenceGaps += Math.max(1, sequence - this.expectedSequence);
+      }
+      this.expectedSequence = sequence + 1;
     }
-    this.ring.push(samples);
+    if (this.lastArrival > 0) {
+      const interval = now - this.lastArrival;
+      this.intervalTotal += interval;
+      this.intervalCount += 1;
+      const jitter = Math.abs(interval - 20);
+      this.jitterTotal += jitter;
+      if (jitter > this.jitterMax) this.jitterMax = jitter;
+    }
+    this.lastArrival = now;
+    const samples = this.resample(decodeS16Le(base64));
+    if (samples.length < 2) return;
+    this.receivedFrames += samples.length >> 1;
+    if (this.worklet) this.worklet.port.postMessage(samples);
+    else this.ring.push(samples);
+    this.report(now);
   }
 
   release(): void {
@@ -166,29 +211,62 @@ export class PageAudioRuntime implements AudioRuntime {
     this.source = null;
     this.tracks = 0;
     this.ring = new StereoRing();
+    this.pending = new Float32Array(0);
+    this.phase = 0;
+    this.expectedSequence = 0;
+    this.jitterTotal = 0;
     const context = this.context;
     this.context = null;
     if (context && context.state !== "closed") await context.close().catch(() => undefined);
   }
 
+  private report(now: number): void {
+    if (this.lastReport !== 0 && now - this.lastReport < 2000) return;
+    const seconds = this.lastReport === 0 ? 2 : (now - this.lastReport) / 1000;
+    const received = Math.round(this.receivedFrames / seconds);
+    const arrival = this.intervalCount > 0 ? this.intervalTotal / this.intervalCount : 0;
+    const jitter = this.intervalCount > 0 ? this.jitterTotal / this.intervalCount : 0;
+    console.debug(
+      `ShareGuard audio received=${received}/s buffered=${Math.round((this.bufferedFrames * 1000) / SAMPLE_RATE)}ms arrival=${arrival.toFixed(1)}ms jitter=${jitter.toFixed(1)}ms jitterMax=${this.jitterMax.toFixed(1)}ms gaps=${this.sequenceGaps} underruns=${this.workletUnderruns} overruns=${this.workletOverruns}`,
+    );
+    this.receivedFrames = 0;
+    this.intervalTotal = 0;
+    this.jitterTotal = 0;
+    this.intervalCount = 0;
+    this.jitterMax = 0;
+    this.lastReport = now;
+  }
+
   private resample(interleaved: Float32Array): Float32Array {
     const rate = this.context?.sampleRate ?? SAMPLE_RATE;
     if (rate === SAMPLE_RATE || interleaved.length < 4) return interleaved;
-    const inputFrames = interleaved.length >> 1;
-    const outputFrames = Math.max(1, Math.round((inputFrames * rate) / SAMPLE_RATE));
-    const output = new Float32Array(outputFrames * 2);
-    for (let frame = 0; frame < outputFrames; frame++) {
-      const position = (frame * SAMPLE_RATE) / rate;
-      const index = Math.min(inputFrames - 1, Math.floor(position));
-      const next = Math.min(inputFrames - 1, index + 1);
-      const fraction = position - index;
-      const left = interleaved[index * 2] ?? 0;
-      const leftNext = interleaved[next * 2] ?? left;
-      const right = interleaved[index * 2 + 1] ?? left;
-      const rightNext = interleaved[next * 2 + 1] ?? right;
-      output[frame * 2] = left * (1 - fraction) + leftNext * fraction;
-      output[frame * 2 + 1] = right * (1 - fraction) + rightNext * fraction;
+    const merged = new Float32Array(this.pending.length + interleaved.length);
+    merged.set(this.pending);
+    merged.set(interleaved, this.pending.length);
+    const inputFrames = merged.length >> 1;
+    if (inputFrames < 2) {
+      this.pending = merged;
+      return new Float32Array(0);
     }
-    return output;
+    const step = SAMPLE_RATE / rate;
+    const output = new Float32Array(Math.ceil(inputFrames / step) * 2 + 2);
+    let written = 0;
+    let position = this.phase;
+    while (position + 1 < inputFrames && written * 2 + 1 < output.length) {
+      const index = Math.floor(position);
+      const fraction = position - index;
+      const left = merged[index * 2] ?? 0;
+      const leftNext = merged[(index + 1) * 2] ?? left;
+      const right = merged[index * 2 + 1] ?? left;
+      const rightNext = merged[(index + 1) * 2 + 1] ?? right;
+      output[written * 2] = left * (1 - fraction) + leftNext * fraction;
+      output[written * 2 + 1] = right * (1 - fraction) + rightNext * fraction;
+      written += 1;
+      position += step;
+    }
+    const consumed = Math.min(inputFrames - 1, Math.floor(position));
+    this.phase = position - consumed;
+    this.pending = merged.slice(consumed * 2);
+    return output.subarray(0, written * 2);
   }
 }

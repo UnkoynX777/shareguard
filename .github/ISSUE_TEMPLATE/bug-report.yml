@@ -6,7 +6,9 @@ labels:
 body:
   - type: markdown
     attributes:
-      value: Remove personal names, account names, and audio recordings before you paste logs.
+      value: |
+        You can write this report in English or Brazilian Portuguese.
+        Remove personal names, account names, and audio recordings before you paste logs.
   - type: input
     id: version
     attributes:

@@ -60,6 +60,37 @@ std::vector<AudioRingBuffer*> ProcessCapturePool::buffers() {
   return output;
 }
 
+std::uint64_t ProcessCapturePool::capturedFrames() const {
+  std::uint64_t total = 0;
+  for (const auto& entry : sources_) {
+    if (entry.second) total += entry.second->capturedFrames();
+  }
+  return total;
+}
+
+std::uint64_t ProcessCapturePool::discontinuities() const {
+  std::uint64_t total = 0;
+  for (const auto& entry : sources_) {
+    if (entry.second) total += entry.second->discontinuities();
+  }
+  return total;
+}
+
+std::uint64_t ProcessCapturePool::droppedFrames() {
+  std::uint64_t total = 0;
+  for (const auto& entry : sources_) {
+    if (entry.second) total += entry.second->buffer().droppedFrames();
+  }
+  return total;
+}
+
+int ProcessCapturePool::sampleRate() const {
+  for (const auto& entry : sources_) {
+    if (entry.second && entry.second->sampleRate() > 0) return entry.second->sampleRate();
+  }
+  return 0;
+}
+
 void ProcessCapturePool::stop() { sources_.clear(); }
 
 }

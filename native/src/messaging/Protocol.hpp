@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "audio/format/AudioFrame.hpp"
 #include "policy/AudioPolicy.hpp"
@@ -11,7 +11,7 @@
 namespace shareguard {
 
 constexpr int kProtocolVersion = 2;
-constexpr const char* kNativeVersion = "0.3.0";
+constexpr const char* kNativeVersion = "0.3.1";
 
 std::optional<std::string> jsonStringField(const std::string& json, const std::string& key);
 std::optional<bool> jsonBoolField(const std::string& json, const std::string& key);

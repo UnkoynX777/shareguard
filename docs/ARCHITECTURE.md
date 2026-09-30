@@ -1,3 +1,5 @@
+English | [Português (Brasil)](./ARCHITECTURE.pt-BR.md)
+
 # Architecture
 
 ShareGuard filters the audio of a browser screen share. It does not change what you hear on the computer. No application name is special-cased. Discord, Spotify, or any other executable appears because it is running.
@@ -38,7 +40,7 @@ The page creates the protected audio track. A `MediaStreamTrack` created in the 
 | `ProcessMonitor` | Scans about once a second and emits a diff when something changed |
 | `AudioPolicy` | Protection on or off, and blocked identities |
 | `AudioPolicyEngine` | The only place that chooses a capture strategy |
-| `AudioEngine` | Runs capture and emits 20 ms frames |
+| `AudioEngine` | Packetizes captured audio into 20 ms frames only when a full block is available, then a separate writer sends them |
 | `ProcessCapturePool` | Opens and closes `INCLUDE` captures per tree, without capturing a child of a tree that is already included |
 | `AudioMixer` | Sums float samples and clamps them to -1..1 |
 | `NativeMessagingHost` | stdin/stdout transport, one connection |
@@ -50,7 +52,9 @@ Strategies:
 - `SingleProcessExclusion` when exactly one blocked identity is running and it has one root. The call uses `PROCESS_LOOPBACK_MODE_EXCLUDE_TARGET_PROCESS_TREE` with one `TargetProcessId`.
 - `AllowedProcessMix` otherwise. Several exclusions are not mixed, because each exclusion still contains the allowed audio and summing them would duplicate it. The pool opens `PROCESS_LOOPBACK_MODE_INCLUDE_TARGET_PROCESS_TREE` only for allowed roots that are producing audio and are not descendants of another included root. A root that contains a blocked process is left out, so the blocked audio does not leak.
 
-The internal format is 48 kHz, stereo, float. Conversion to `s16le` happens when the `AudioFrame` is built. The rings hold about 250 ms and drop the oldest audio.
+The internal format is 48 kHz, stereo, float. WASAPI may deliver a different mix format; conversion to that canonical format happens once, and the resampler keeps its remainder between packets. Conversion to `s16le` happens when the `AudioFrame` is built.
+
+The capture thread only copies samples into a ring. It does not encode or write stdout. The mix thread emits a packet when at least 960 frames are queued. It does not pad a short read with silence. A writer thread performs Base64 and Native Messaging. The page plays from an AudioWorklet ring with about 160 ms of prebuffer, so transport jitter is not the playback clock. `SHAREGUARD_DEBUG=1` logs one native audio line every two seconds. The page writes the matching line with `console.debug` during a share.
 
 If a capture that should enforce a block fails, the helper does not fall back to the full system mix. The extension removes the shared audio track and leaves the video.
 

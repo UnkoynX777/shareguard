@@ -1,6 +1,4 @@
-<p align="center">
-  <a href="./README.md">English</a> · <a href="./README.pt-BR.md">Português (Brasil)</a>
-</p>
+[English](./README.md) | Português (Brasil)
 
 <p align="center">
   <img src="extension/public/icons/icon128.png" width="96" alt="Ícone do ShareGuard">
@@ -27,7 +25,7 @@
 <p align="center">
   <a href="https://github.com/UnkoynX777/shareguard/releases/latest"><strong>Baixar para Windows</strong></a>
   ·
-  <a href="./docs/INSTALLATION.md">Instalação</a>
+  <a href="./docs/INSTALLATION.pt-BR.md">Instalação</a>
   ·
   <a href="https://github.com/UnkoynX777/shareguard/releases">Todas as releases</a>
 </p>
@@ -46,7 +44,7 @@ Execute `ShareGuard-Setup-vX.Y.Z-x64.exe`. Ele instala o helper nativo e copia a
 
 Chrome · Edge · Firefox
 
-[Guia de instalação](./docs/INSTALLATION.md)
+[Guia de instalação](./docs/INSTALLATION.pt-BR.md)
 
 Windows 10 ou 11, 64 bits. Chrome 116 ou mais recente, Edge atual, ou Firefox 128 ou mais recente. Os arquivos oficiais estão só nessa Release do GitHub. `SHA256SUMS.txt` serve para conferir o download. O instalador não tem assinatura de código.
 
@@ -74,7 +72,7 @@ Esses nomes são exemplos. O ShareGuard não trata nenhum executável de forma e
 ## Começar
 
 1. Baixe e instale o ShareGuard na [última release](https://github.com/UnkoynX777/shareguard/releases/latest).
-2. Adicione a extensão no navegador. [Guia de instalação](./docs/INSTALLATION.md).
+2. Adicione a extensão no navegador. [Guia de instalação](./docs/INSTALLATION.pt-BR.md).
 3. Abra o ShareGuard. **Native** deve mostrar **Connected**.
 4. Ligue a proteção e marque como Blocked o que os outros não devem ouvir.
 5. Inicie um compartilhamento que inclua áudio.
@@ -87,7 +85,7 @@ Esses nomes são exemplos. O ShareGuard não trata nenhum executável de forma e
 | Microsoft Edge | Chromium | Manual |
 | Mozilla Firefox | Firefox | XPI assinado |
 
-Chrome e Edge usam o modo de desenvolvedor e **Load unpacked** na pasta que o instalador copia. O Firefox usa o XPI assinado da mesma release, quando esse arquivo é publicado. O Firefox ESR 115 não serve. O passo a passo está no [guia de instalação](./docs/INSTALLATION.md).
+Chrome e Edge usam o modo de desenvolvedor e **Load unpacked** na pasta que o instalador copia. O Firefox usa o XPI assinado da mesma release, quando esse arquivo é publicado. O Firefox ESR 115 não serve. O passo a passo está no [guia de instalação](./docs/INSTALLATION.pt-BR.md).
 
 ## Uso
 
@@ -108,7 +106,7 @@ flowchart LR
   extension --> share[Compartilhamento]
 ```
 
-O detalhe está em [Arquitetura](./docs/ARCHITECTURE.md).
+O detalhe está em [Arquitetura](./docs/ARCHITECTURE.pt-BR.md).
 
 ## Privacidade
 
@@ -127,11 +125,11 @@ npm ci
 npm run build
 ```
 
-[Compilação](./docs/BUILDING.md) · [Desenvolvimento](./docs/DEVELOPMENT.md) · [Como contribuir](./CONTRIBUTING.md)
+[Compilação](./docs/BUILDING.pt-BR.md) · [Desenvolvimento](./docs/DEVELOPMENT.pt-BR.md) · [Como contribuir](./CONTRIBUTING.pt-BR.md)
 
 ## Problemas
 
-Se **Native** continuar **Unavailable**, comece por [Solução de problemas](./docs/TROUBLESHOOTING.md). Vulnerabilidades vão para [SECURITY.md](./SECURITY.md), não para uma issue pública.
+Se **Native** continuar **Unavailable**, comece por [Solução de problemas](./docs/TROUBLESHOOTING.pt-BR.md). Vulnerabilidades vão para [SECURITY.pt-BR.md](./SECURITY.pt-BR.md), não para uma issue pública.
 
 ## Roteiro
 
@@ -143,6 +141,8 @@ Ainda não existe: assinatura de código do instalador. O pacote do Firefox só 
 
 O ShareGuard é distribuído pelo GitHub. O código da extensão e os pacotes da release são públicos neste repositório.
 
+A documentação está disponível em inglês e português brasileiro. As regras estão em [Documentação](./docs/DOCUMENTATION.pt-BR.md).
+
 ## Licença
 
-[MIT](./LICENSE). Criado e mantido por [UnkoynX777](https://github.com/UnkoynX777).
+[MIT](./LICENSE). Criado e mantido por [UnkoynX777](https://github.com/UnkoynX777). O arquivo [LICENSE](./LICENSE) é o texto oficial da licença e permanece em inglês.

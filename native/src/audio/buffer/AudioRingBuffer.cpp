@@ -23,6 +23,7 @@ void AudioRingBuffer::push(const float* interleavedStereo, size_t frames) {
   if (overflow > 0) {
     readFrame_ = (readFrame_ + overflow) % capacityFrames_;
     availableFrames_ -= overflow;
+    droppedFrames_.fetch_add(overflow);
   }
   size_t remaining = frames;
   const float* input = interleavedStereo;
@@ -34,11 +35,17 @@ void AudioRingBuffer::push(const float* interleavedStereo, size_t frames) {
     input += run * 2;
     remaining -= run;
   }
-  if (availableFrames_ > 9600) {
-    const size_t drop = availableFrames_ - 4800;
-    readFrame_ = (readFrame_ + drop) % capacityFrames_;
-    availableFrames_ -= drop;
-  }
+  ready_.notify_all();
+}
+
+size_t AudioRingBuffer::available() const {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return availableFrames_;
+}
+
+bool AudioRingBuffer::waitFor(size_t minFrames, std::stop_token stop, std::chrono::milliseconds timeout) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  return ready_.wait_for(lock, stop, timeout, [&] { return availableFrames_ >= minFrames; });
 }
 
 size_t AudioRingBuffer::pull(float* interleavedStereo, size_t frames) {

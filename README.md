@@ -1,6 +1,4 @@
-<p align="center">
-  <a href="./README.md">English</a> · <a href="./README.pt-BR.md">Português (Brasil)</a>
-</p>
+English | [Português (Brasil)](./README.pt-BR.md)
 
 <p align="center">
   <img src="extension/public/icons/icon128.png" width="96" alt="ShareGuard icon">
@@ -143,6 +141,8 @@ Not available yet: code signing of the installer. A Firefox package is published
 
 ShareGuard is distributed directly through GitHub. The extension source and the release packages are public in this repository.
 
+Documentation is available in English and Brazilian Portuguese. The rules are in [Documentation](./docs/DOCUMENTATION.md).
+
 ## License
 
-[MIT](./LICENSE). Created and maintained by [UnkoynX777](https://github.com/UnkoynX777).
+[MIT](./LICENSE). Created and maintained by [UnkoynX777](https://github.com/UnkoynX777). The [LICENSE](./LICENSE) file is the official license text and stays in English.

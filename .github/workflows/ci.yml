@@ -16,6 +16,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check bilingual documentation
+        run: node ./scripts/check-docs.mjs
+
       - name: Check version files
         shell: pwsh
         run: ./scripts/check-version.ps1

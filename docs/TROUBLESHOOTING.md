@@ -1,3 +1,5 @@
+English | [Português (Brasil)](./TROUBLESHOOTING.pt-BR.md)
+
 # Troubleshooting
 
 ## Native helper not installed

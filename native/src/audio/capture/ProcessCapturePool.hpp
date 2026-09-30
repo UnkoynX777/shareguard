@@ -15,6 +15,10 @@ class ProcessCapturePool {
   bool sync(const std::vector<std::uint32_t>& rootPids, std::string& error);
   bool matches(const std::vector<std::uint32_t>& rootPids) const;
   std::vector<AudioRingBuffer*> buffers();
+  std::uint64_t capturedFrames() const;
+  std::uint64_t discontinuities() const;
+  std::uint64_t droppedFrames();
+  int sampleRate() const;
   void stop();
   int size() const { return static_cast<int>(sources_.size()); }
 

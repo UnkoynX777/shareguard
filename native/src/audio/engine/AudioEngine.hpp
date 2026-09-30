@@ -10,6 +10,8 @@
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <cstdint>
+#include <deque>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -38,7 +40,11 @@ class AudioEngine {
 
  private:
   void loop(std::stop_token stop);
+  void writeLoop(std::stop_token stop);
   bool rebuild(const ProcessSnapshot& snapshot, const AudioPolicy& policy, std::string& code, std::string& error);
+  void enqueue(AudioFrame frame);
+  void logDiagnostics(std::chrono::steady_clock::time_point& lastLog, std::uint64_t& lastCaptured, std::uint64_t& lastMixed,
+                      std::uint64_t& lastSent);
 
   AudioPolicyEngine policyEngine_;
   AudioMixer mixer_;
@@ -62,6 +68,15 @@ class AudioEngine {
   std::uint64_t sequence_ = 0;
   int rapidRestarts_ = 0;
   std::chrono::steady_clock::time_point openedAt_{};
+  std::mutex queueMutex_;
+  std::condition_variable_any queueReady_;
+  std::deque<AudioFrame> queue_;
+  std::atomic<std::uint64_t> mixedFrames_{0};
+  std::atomic<std::uint64_t> sentFrames_{0};
+  std::atomic<std::uint64_t> transportDrops_{0};
+  std::atomic<std::uint64_t> starved_{0};
+  std::atomic<int> queueFrames_{0};
+  std::jthread writer_;
   std::jthread thread_;
 };
 

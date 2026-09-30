@@ -9,7 +9,10 @@ namespace shareguard {
 
 class AudioMixer {
  public:
-  void mix(const std::vector<AudioRingBuffer*>& inputs, float* output, size_t frames) const;
+  void mix(const std::vector<AudioRingBuffer*>& inputs, float* output, size_t frames);
+
+ private:
+  std::vector<float> scratch_;
 };
 
 }

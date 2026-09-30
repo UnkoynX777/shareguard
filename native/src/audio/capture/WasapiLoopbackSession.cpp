@@ -118,7 +118,9 @@ bool WasapiLoopbackSession::read(const std::function<void(const CapturedFrames&)
     BYTE* data = nullptr;
     UINT32 frames = 0;
     DWORD flags = 0;
-    result = capture_->GetBuffer(&data, &frames, &flags, nullptr, nullptr);
+    UINT64 devicePosition = 0;
+    UINT64 qpcPosition = 0;
+    result = capture_->GetBuffer(&data, &frames, &flags, &devicePosition, &qpcPosition);
     if (FAILED(result)) {
       error = hresultText("GetBuffer", result);
       return false;
@@ -128,6 +130,8 @@ bool WasapiLoopbackSession::read(const std::function<void(const CapturedFrames&)
     captured.frames = frames;
     captured.silent = (flags & AUDCLNT_BUFFERFLAGS_SILENT) != 0 || data == nullptr;
     captured.discontinuity = (flags & AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY) != 0;
+    captured.devicePosition = devicePosition;
+    captured.qpcPosition = qpcPosition;
     captured.data = captured.silent ? nullptr : data;
     consumer(captured);
 
