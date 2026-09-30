@@ -14,7 +14,8 @@ class MessageDispatcher {
   struct Actions {
     std::function<ProcessSnapshot(bool includeBackground)> snapshot;
     std::function<void(bool includeBackground)> setIncludeBackground;
-    std::function<void(const AudioPolicy& policy)> applyPolicy;
+    std::function<std::uint64_t(const AudioPolicy& policy)> applyPolicy;
+    std::function<bool()> capturing;
     std::function<bool(std::string& code, std::string& error)> startCapture;
     std::function<void()> stopCapture;
     std::function<std::string()> status;

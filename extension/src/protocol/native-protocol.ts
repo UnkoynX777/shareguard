@@ -9,15 +9,20 @@ export function helloMessage(
   return { type: "HELLO", protocolVersion: PROTOCOL_VERSION, client: { browser, extensionVersion } };
 }
 
-export function policyMessage(rules: ExtensionRules): {
+export function policyMessage(
+  rules: ExtensionRules,
+  revision: number,
+): {
   type: "SET_AUDIO_POLICY";
   protectionEnabled: boolean;
   blocked: string[];
+  revision: number;
 } {
   return {
     type: "SET_AUDIO_POLICY",
     protectionEnabled: rules.protectionEnabled,
     blocked: rules.blockedApplications,
+    revision,
   };
 }
 

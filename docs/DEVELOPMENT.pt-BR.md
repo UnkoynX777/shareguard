@@ -49,7 +49,7 @@ Firefox, para desenvolvimento: `npm run firefox` gera o pacote do Firefox e roda
 
 ## Log
 
-Passe `--debug` ao helper, ou defina `SHAREGUARD_DEBUG`. Os logs vão para stderr e para `%LOCALAPPDATA%\ShareGuard\shareguard.log`. O arquivo fica limitado a cerca de 1 MB. PCM não é registrado. Com áudio em execução, uma linha `audio capture=...` é escrita a cada dois segundos. `waits` conta quantas vezes o mixer esperou um bloco completo de 20 ms. Essa espera é normal. `drops` e um `discontinuities` que continua subindo não são. A página escreve o lado do navegador com `console.debug` durante um compartilhamento.
+Passe `--debug` ao helper, ou defina `SHAREGUARD_DEBUG`. Os logs vão para stderr e para `%LOCALAPPDATA%\ShareGuard\shareguard.log`. O arquivo fica limitado a cerca de 1 MB. PCM não é registrado. Com áudio em execução, uma linha `audio capture=...` é escrita a cada dois segundos. `waits` conta quantas vezes o mixer esperou um bloco completo de 20 ms. Essa espera é normal. `drops` e um `discontinuities` que continua subindo não são. A mesma linha inclui `revision`, `coalesced`, `incremental`, `rebuilds`, `expectedStops` e `unexpected`. Um toggle de policy deve avançar `revision` e pode aumentar `coalesced` ou `incremental`. `unexpected` deve permanecer em 0. A página escreve o lado do navegador com `console.debug` durante um compartilhamento.
 
 Para gravar o mix nativo antes do Native Messaging:
 

@@ -3,6 +3,7 @@
 #include "audio/buffer/AudioRingBuffer.hpp"
 #include "audio/engine/AudioEngine.hpp"
 #include "audio/engine/AudioPolicyEngine.hpp"
+#include "audio/engine/PolicyMailbox.hpp"
 #include "audio/format/WavWriter.hpp"
 #include "logging/Logger.hpp"
 #include "messaging/MessageDispatcher.hpp"
@@ -29,6 +30,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <mutex>
+#include <random>
 #include <string>
 #include <thread>
 #include <vector>
@@ -40,7 +42,159 @@
 namespace shareguard {
 namespace {
 
+ApplicationGroup app(const char* id, std::uint32_t pid) {
+  ApplicationGroup group;
+  group.id = id;
+  group.audioActive = true;
+  group.rootPids = {pid};
+  group.pids = {pid};
+  return group;
+}
+
+bool containsPid(const std::vector<std::uint32_t>& pids, std::uint32_t pid) {
+  for (const std::uint32_t value : pids) {
+    if (value == pid) return true;
+  }
+  return false;
+}
+
+int policySelfTest() {
+  ProcessSnapshot snapshot;
+  snapshot.groups = {app("chrome.exe", 100), app("discord.exe", 200), app("spotify.exe", 300)};
+  AudioPolicyEngine policyEngine;
+  AudioPolicy one;
+  one.protectionEnabled = true;
+  one.blockedIds = {"discord.exe"};
+  const CapturePlan raw = policyEngine.plan(snapshot, one);
+  if (raw.strategy != CaptureStrategy::SingleProcessExclusion || raw.excludeRootPid != 200) {
+    Logger::error("policy self-test lost the single-process plan");
+    return 1;
+  }
+  const CapturePlan first = policyEngine.sessionPlan(snapshot, one, CaptureStrategy::SystemLoopback);
+  if (first.strategy != CaptureStrategy::SingleProcessExclusion || first.excludeRootPid != 200) {
+    Logger::error("policy self-test replaced one blocked tree with a mix");
+    return 1;
+  }
+  AudioPolicy two;
+  two.protectionEnabled = true;
+  two.blockedIds = {"discord.exe", "spotify.exe"};
+  const CapturePlan multi = policyEngine.sessionPlan(snapshot, two, CaptureStrategy::SystemLoopback);
+  if (multi.strategy != CaptureStrategy::AllowedProcessMix || !containsPid(multi.includeRootPids, 100) ||
+      containsPid(multi.includeRootPids, 200) || containsPid(multi.includeRootPids, 300)) {
+    Logger::error("policy self-test did not keep allowed apps in the mix");
+    return 1;
+  }
+  const CapturePlan stayed = policyEngine.sessionPlan(snapshot, one, CaptureStrategy::AllowedProcessMix);
+  if (stayed.strategy != CaptureStrategy::AllowedProcessMix || !containsPid(stayed.includeRootPids, 100) ||
+      containsPid(stayed.includeRootPids, 200)) {
+    Logger::error("policy self-test left the stable mix strategy");
+    return 1;
+  }
+  AudioPolicy clear;
+  clear.protectionEnabled = true;
+  if (policyEngine.sessionPlan(snapshot, clear, CaptureStrategy::AllowedProcessMix).strategy !=
+      CaptureStrategy::SystemLoopback) {
+    Logger::error("policy self-test kept a mix when nothing was blocked");
+    return 1;
+  }
+  ApplicationGroup firefox = app("firefox.exe", 10);
+  firefox.pids = {10, 11, 12, 13};
+  ProcessSnapshot firefoxSnapshot;
+  firefoxSnapshot.groups = {firefox, app("chrome.exe", 100)};
+  AudioPolicy blockFirefox;
+  blockFirefox.protectionEnabled = true;
+  blockFirefox.blockedIds = {"firefox.exe"};
+  const CapturePlan firefoxPlan = policyEngine.sessionPlan(firefoxSnapshot, blockFirefox, CaptureStrategy::SystemLoopback);
+  if (firefoxPlan.strategy != CaptureStrategy::SingleProcessExclusion || firefoxPlan.excludeRootPid != 10) {
+    Logger::error("policy self-test split one Firefox tree into a mix");
+    return 1;
+  }
+  firefox.rootPids = {10, 40};
+  firefox.pids = {10, 11, 40, 41};
+  firefoxSnapshot.groups = {firefox, app("chrome.exe", 100)};
+  if (policyEngine.plan(firefoxSnapshot, blockFirefox).strategy != CaptureStrategy::AllowedProcessMix) {
+    Logger::error("policy self-test excluded an application that has two roots");
+    return 1;
+  }
+  AudioPolicy off;
+  off.protectionEnabled = false;
+  off.blockedIds = {"discord.exe"};
+  if (policyEngine.sessionPlan(snapshot, off, CaptureStrategy::AllowedProcessMix).strategy !=
+      CaptureStrategy::SystemLoopback) {
+    Logger::error("policy self-test kept filtering while protection was off");
+    return 1;
+  }
+
+  PolicyMailbox storm;
+  for (int i = 0; i < 100; ++i) {
+    AudioPolicy policy;
+    policy.protectionEnabled = true;
+    policy.clientRevision = static_cast<std::uint64_t>(i + 1);
+    policy.blockedIds = {(i % 2) == 0 ? "spotify.exe" : "discord.exe"};
+    storm.push(policy);
+  }
+  AudioPolicy got;
+  const std::uint64_t revision = storm.sample(got);
+  if (storm.received() != 100 || storm.coalesced() != 99 || revision != 100 || got.blockedIds.size() != 1 ||
+      got.blockedIds.front() != "discord.exe") {
+    Logger::error("policy self-test did not coalesce to the latest snapshot");
+    return 1;
+  }
+  AudioPolicy stale;
+  stale.clientRevision = 50;
+  stale.blockedIds = {"chrome.exe"};
+  storm.push(stale);
+  const std::uint64_t kept = storm.sample(got);
+  if (kept != 100 || got.blockedIds.front() != "discord.exe") {
+    Logger::error("policy self-test applied a stale revision");
+    return 1;
+  }
+
+  CaptureStrategy floor = CaptureStrategy::SystemLoopback;
+  AudioPolicy last;
+  std::mt19937 rng(1);
+  PolicyMailbox randomPolicies;
+  for (int i = 0; i < 1000; ++i) {
+    AudioPolicy policy;
+    policy.protectionEnabled = true;
+    policy.clientRevision = static_cast<std::uint64_t>(i + 1);
+    if (i == 0 || (rng() % 2) == 0) policy.blockedIds.push_back("discord.exe");
+    if ((rng() % 2) == 0) policy.blockedIds.push_back("spotify.exe");
+    last = policy;
+    const CaptureStrategy before = floor;
+    const CapturePlan planned = policyEngine.sessionPlan(snapshot, policy, floor);
+    if (planned.strategy == CaptureStrategy::AllowedProcessMix) {
+      floor = CaptureStrategy::AllowedProcessMix;
+    } else if (planned.strategy == CaptureStrategy::SystemLoopback) {
+      floor = CaptureStrategy::SystemLoopback;
+    }
+    if (policy.blockedIds.size() == 1 && before != CaptureStrategy::AllowedProcessMix &&
+        planned.strategy != CaptureStrategy::SingleProcessExclusion) {
+      Logger::error("policy self-test mixed a single blocked tree");
+      return 1;
+    }
+    if (policy.blockedIds.size() >= 2 && planned.strategy != CaptureStrategy::AllowedProcessMix) {
+      Logger::error("policy self-test used one exclusion for several trees");
+      return 1;
+    }
+    if (planned.strategy == CaptureStrategy::AllowedProcessMix && !containsPid(planned.includeRootPids, 100)) {
+      Logger::error("policy self-test dropped an unchanged allowed app");
+      return 1;
+    }
+    randomPolicies.push(policy);
+  }
+  AudioPolicy applied;
+  randomPolicies.sample(applied);
+  if (!(applied.blockedIds == last.blockedIds)) {
+    Logger::error("policy self-test did not converge on the last desired policy");
+    return 1;
+  }
+  Logger::info("policy self-test passed");
+  return 0;
+}
+
 int audioSelfTest() {
+  if (const int policy = policySelfTest()) return policy;
   AudioRingBuffer ring(8000);
   int cursor = 0;
   const int chunks[] = {480, 480, 240, 720, 960};
@@ -271,6 +425,10 @@ int serve() {
   bool accepted = false;
   std::atomic<bool> includeBackground{false};
   NativeMessagingHost host;
+  engine.setAppliedHandler([&](std::uint64_t revision, CaptureStrategy strategy, int blockedCount) {
+    runtime.captureStrategy = strategy;
+    host.send(policyAppliedJson(captureStrategyName(strategy), blockedCount, revision, true));
+  });
 
   auto currentSnapshot = [&] {
     std::lock_guard<std::mutex> lock(snapshotMutex);
@@ -317,10 +475,9 @@ int serve() {
     policy = incoming;
     runtime.protectionEnabled = incoming.protectionEnabled;
     runtime.blockedCount = static_cast<int>(incoming.blockedIds.size());
-    if (engine.capturing()) {
-      engine.applyPolicy(incoming);
-    }
+    return engine.applyPolicy(incoming);
   };
+  actions.capturing = [&] { return engine.capturing(); };
   actions.startCapture = [&](std::string& code, std::string& error) {
     const bool started = engine.start(
         policy, currentSnapshot,
@@ -346,13 +503,18 @@ int serve() {
     engine.stop();
   };
   actions.strategyName = [&] {
-    return captureStrategyName(policyEngine.plan(currentSnapshot(), policy).strategy);
+    if (engine.capturing()) return captureStrategyName(engine.strategy());
+    return captureStrategyName(
+        policyEngine.sessionPlan(currentSnapshot(), policy, CaptureStrategy::SystemLoopback).strategy);
   };
   actions.blockedCount = [&] { return static_cast<int>(policy.blockedIds.size()); };
   actions.status = [&] {
     runtime.capturing = engine.capturing();
     runtime.sharing = session.active();
-    runtime.captureStrategy = policyEngine.plan(currentSnapshot(), policy).strategy;
+    runtime.captureStrategy = engine.capturing()
+                                   ? engine.strategy()
+                                   : policyEngine.sessionPlan(currentSnapshot(), policy, CaptureStrategy::SystemLoopback)
+                                         .strategy;
     runtime.activeSourceCount = engine.sourceCount();
     runtime.blockedCount = static_cast<int>(policy.blockedIds.size());
     return statusJson(runtime.capturing, runtime.sharing, runtime.protectionEnabled,

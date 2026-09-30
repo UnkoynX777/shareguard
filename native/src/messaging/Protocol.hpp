@@ -11,7 +11,7 @@
 namespace shareguard {
 
 constexpr int kProtocolVersion = 2;
-constexpr const char* kNativeVersion = "0.3.1";
+constexpr const char* kNativeVersion = "0.3.2";
 
 std::optional<std::string> jsonStringField(const std::string& json, const std::string& key);
 std::optional<bool> jsonBoolField(const std::string& json, const std::string& key);
@@ -24,7 +24,7 @@ std::string processSnapshotJson(const std::vector<ApplicationGroup>& groups);
 std::string processDiffJson(const std::vector<ApplicationGroup>& previous, const std::vector<ApplicationGroup>& next);
 std::string audioFrameJson(const AudioFrame& frame);
 std::string errorJson(const std::string& code, const std::string& message);
-std::string policyAppliedJson(const char* strategy, int blockedCount);
+std::string policyAppliedJson(const char* strategy, int blockedCount, std::uint64_t revision, bool settled);
 std::string captureStateJson(const char* type, const char* strategy);
 std::string statusJson(bool capturing, bool sharing, bool protectionEnabled, const char* strategy, int blockedCount,
                        int activeSourceCount, const std::string& lastError);

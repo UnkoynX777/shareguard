@@ -20,7 +20,7 @@ Os comandos abaixo são executados na raiz do repositório, salvo quando o passo
 powershell -ExecutionPolicy Bypass -File .\scripts\check-version.ps1
 ```
 
-Isso imprime a versão compartilhada, hoje `0.3.1`, ou falha quando estes arquivos discordam de `VERSION`:
+Isso imprime a versão compartilhada, hoje `0.3.2`, ou falha quando estes arquivos discordam de `VERSION`:
 
 - `VERSION`
 - `extension/manifests/manifest.base.json`
@@ -79,7 +79,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\package-release.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\validate-packages.ps1
 ```
 
-Isso grava `release/ShareGuard-Chromium-v0.3.1.zip`. Dentro dele, `ShareGuard-Chromium/manifest.json` é a raiz da extensão. `extension/dist/firefox` continua sendo a build de desenvolvimento sem assinatura. Ela não se chama `ShareGuard-Firefox-vX.Y.Z.xpi`.
+Isso grava `release/ShareGuard-Chromium-v0.3.2.zip`. Dentro dele, `ShareGuard-Chromium/manifest.json` é a raiz da extensão. `extension/dist/firefox` continua sendo a build de desenvolvimento sem assinatura. Ela não se chama `ShareGuard-Firefox-vX.Y.Z.xpi`.
 
 Também existem `npm run build:chromium`, `npm run build:firefox`, `npm run dev:chromium` e `npm run dev:firefox`.
 
@@ -95,17 +95,17 @@ Compile a extensão e o helper nativo antes. O script copia `extension/dist/chro
 & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" .\installer\shareguard.iss
 ```
 
-O resultado é `installer\Output\ShareGuard-Setup-v0.3.1-x64.exe`. A versão no nome do arquivo vem de `AppVersion` em `installer/shareguard.iss`.
+O resultado é `installer\Output\ShareGuard-Setup-v0.3.2-x64.exe`. A versão no nome do arquivo vem de `AppVersion` em `installer/shareguard.iss`.
 
 ## Build de release
 
-O workflow de release, numa tag como `v0.3.1`, confere a versão, compila a extensão, empacota o zip Chromium, valida os IDs, assina o Firefox quando `AMO_JWT_ISSUER` e `AMO_JWT_SECRET` estão definidos, compila o helper nativo e então o setup. Uma tag como `v0.3.1-beta.1` é publicada como pre-release e ainda precisa corresponder ao `VERSION` `0.3.1`.
+O workflow de release, numa tag como `v0.3.2`, confere a versão, compila a extensão, empacota o zip Chromium, valida os IDs, assina o Firefox quando `AMO_JWT_ISSUER` e `AMO_JWT_SECRET` estão definidos, compila o helper nativo e então o setup. Uma tag como `v0.3.2-beta.1` é publicada como pre-release e ainda precisa corresponder ao `VERSION` `0.3.2`.
 
 Nomes publicados:
 
-- `ShareGuard-Setup-v0.3.1-x64.exe`
-- `ShareGuard-Chromium-v0.3.1.zip`
-- `ShareGuard-Firefox-v0.3.1.xpi` só quando a assinatura da Mozilla deu certo
+- `ShareGuard-Setup-v0.3.2-x64.exe`
+- `ShareGuard-Chromium-v0.3.2.zip`
+- `ShareGuard-Firefox-v0.3.2.xpi` só quando a assinatura da Mozilla deu certo
 - `SHA256SUMS.txt`
 
 Se os segredos de assinatura não existirem, o workflow ainda publica o setup e o zip Chromium, e as notas da release dizem que o pacote do Firefox para o usuário não está disponível. Se a assinatura for tentada e falhar, a release não é criada. Um arquivo sem assinatura nunca é enviado como `ShareGuard-Firefox-vX.Y.Z.xpi`.

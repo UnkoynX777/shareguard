@@ -253,9 +253,10 @@ std::string errorJson(const std::string& code, const std::string& message) {
   return "{\"type\":\"ERROR\",\"code\":\"" + jsonEscape(code) + "\",\"message\":\"" + jsonEscape(message) + "\"}";
 }
 
-std::string policyAppliedJson(const char* strategy, int blockedCount) {
+std::string policyAppliedJson(const char* strategy, int blockedCount, std::uint64_t revision, bool settled) {
   return std::string("{\"type\":\"AUDIO_POLICY_APPLIED\",\"captureStrategy\":\"") + strategy +
-         "\",\"blockedCount\":" + std::to_string(blockedCount) + "}";
+         "\",\"blockedCount\":" + std::to_string(blockedCount) + ",\"revision\":" + std::to_string(revision) +
+         ",\"settled\":" + (settled ? "true" : "false") + "}";
 }
 
 std::string captureStateJson(const char* type, const char* strategy) {

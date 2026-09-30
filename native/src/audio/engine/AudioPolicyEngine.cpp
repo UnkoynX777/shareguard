@@ -6,37 +6,17 @@
 #include <unordered_set>
 
 namespace shareguard {
+namespace {
 
-CapturePlan AudioPolicyEngine::plan(const ProcessSnapshot& snapshot, const AudioPolicy& policy) const {
-  CapturePlan result;
-  if (!policy.protectionEnabled) {
-    return result;
-  }
-
-  std::vector<const ApplicationGroup*> blocked;
+std::vector<std::uint32_t> allowedIncludeRoots(const ProcessSnapshot& snapshot, const AudioPolicy& policy) {
   std::unordered_set<std::uint32_t> blockedPids;
   for (const ApplicationGroup& group : snapshot.groups) {
     if (!policy.blocks(group.id)) {
       continue;
     }
-    blocked.push_back(&group);
     blockedPids.insert(group.pids.begin(), group.pids.end());
   }
-  if (blocked.empty()) {
-    return result;
-  }
 
-  int blockedRoots = 0;
-  for (const ApplicationGroup* group : blocked) {
-    blockedRoots += static_cast<int>(group->rootPids.size());
-  }
-  if (blocked.size() == 1 && blockedRoots == 1 && !blocked.front()->rootPids.empty()) {
-    result.strategy = CaptureStrategy::SingleProcessExclusion;
-    result.excludeRootPid = blocked.front()->rootPids.front();
-    return result;
-  }
-
-  result.strategy = CaptureStrategy::AllowedProcessMix;
   std::vector<std::uint32_t> candidates;
   for (const ApplicationGroup& group : snapshot.groups) {
     if (policy.blocks(group.id) || !group.audioActive) {
@@ -47,6 +27,7 @@ CapturePlan AudioPolicyEngine::plan(const ProcessSnapshot& snapshot, const Audio
     }
   }
 
+  std::vector<std::uint32_t> included;
   for (const std::uint32_t root : candidates) {
     bool nested = false;
     for (const std::uint32_t other : candidates) {
@@ -66,13 +47,65 @@ CapturePlan AudioPolicyEngine::plan(const ProcessSnapshot& snapshot, const Audio
       }
     }
     if (!leaksBlocked) {
-      result.includeRootPids.push_back(root);
+      included.push_back(root);
     }
   }
-  std::sort(result.includeRootPids.begin(), result.includeRootPids.end());
-  result.includeRootPids.erase(std::unique(result.includeRootPids.begin(), result.includeRootPids.end()),
-                               result.includeRootPids.end());
+  std::sort(included.begin(), included.end());
+  included.erase(std::unique(included.begin(), included.end()), included.end());
+  return included;
+}
+
+}
+
+CapturePlan AudioPolicyEngine::mixPlan(const ProcessSnapshot& snapshot, const AudioPolicy& policy) const {
+  CapturePlan result;
+  result.strategy = CaptureStrategy::AllowedProcessMix;
+  if (!policy.protectionEnabled) {
+    return result;
+  }
+  result.includeRootPids = allowedIncludeRoots(snapshot, policy);
   return result;
+}
+
+CapturePlan AudioPolicyEngine::plan(const ProcessSnapshot& snapshot, const AudioPolicy& policy) const {
+  CapturePlan result;
+  if (!policy.protectionEnabled) {
+    return result;
+  }
+
+  std::vector<const ApplicationGroup*> blocked;
+  for (const ApplicationGroup& group : snapshot.groups) {
+    if (!policy.blocks(group.id)) {
+      continue;
+    }
+    blocked.push_back(&group);
+  }
+  if (blocked.empty()) {
+    return result;
+  }
+
+  int blockedRoots = 0;
+  for (const ApplicationGroup* group : blocked) {
+    blockedRoots += static_cast<int>(group->rootPids.size());
+  }
+  if (blocked.size() == 1 && blockedRoots == 1 && !blocked.front()->rootPids.empty()) {
+    result.strategy = CaptureStrategy::SingleProcessExclusion;
+    result.excludeRootPid = blocked.front()->rootPids.front();
+    return result;
+  }
+  return mixPlan(snapshot, policy);
+}
+
+CapturePlan AudioPolicyEngine::sessionPlan(const ProcessSnapshot& snapshot, const AudioPolicy& policy,
+                                           CaptureStrategy floor) const {
+  if (!policy.protectionEnabled) {
+    return {};
+  }
+  const CapturePlan raw = plan(snapshot, policy);
+  if (raw.strategy == CaptureStrategy::SingleProcessExclusion && floor == CaptureStrategy::AllowedProcessMix) {
+    return mixPlan(snapshot, policy);
+  }
+  return raw;
 }
 
 }

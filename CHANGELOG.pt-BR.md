@@ -8,6 +8,12 @@ A versão em inglês é canônica. Esta página acompanha as mesmas releases.
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-09-30
+
+### Corrigido
+
+- Bloquear um aplicativo deixa de trocar o mix compartilhado por uma captura separada de cada aplicativo permitido. Uma única árvore de processo permanece numa exclusão, e mudanças rápidas de policy deixam de encerrar a captura.
+
 ## [0.3.1] - 2026-09-30
 
 ### Corrigido
@@ -28,6 +34,7 @@ A versão em inglês é canônica. Esta página acompanha as mesmas releases.
 - Um instalador por usuário que registra o host nativo para Chrome, Edge e Firefox e copia a extensão Chromium para `%LOCALAPPDATA%\ShareGuard\Extension\Chromium`.
 - Pacotes de GitHub Release `ShareGuard-Setup-vX.Y.Z-x64.exe`, `ShareGuard-Chromium-vX.Y.Z.zip` e, quando a assinatura unlisted da Mozilla está configurada, `ShareGuard-Firefox-vX.Y.Z.xpi`.
 
-[Unreleased]: https://github.com/UnkoynX777/shareguard/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/UnkoynX777/shareguard/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/UnkoynX777/shareguard/releases/tag/v0.3.2
 [0.3.1]: https://github.com/UnkoynX777/shareguard/releases/tag/v0.3.1
 [0.3.0]: https://github.com/UnkoynX777/shareguard/releases/tag/v0.3.0

@@ -40,7 +40,7 @@ The page creates the protected audio track. A `MediaStreamTrack` created in the 
 | `ProcessMonitor` | Scans about once a second and emits a diff when something changed |
 | `AudioPolicy` | Protection on or off, and blocked identities |
 | `AudioPolicyEngine` | The only place that chooses a capture strategy |
-| `AudioEngine` | Packetizes captured audio into 20 ms frames only when a full block is available, then a separate writer sends them |
+| `AudioEngine` | A control thread applies the latest policy. The mix thread only reads the published graph and packetizes 20 ms frames when a full block is available |
 | `ProcessCapturePool` | Opens and closes `INCLUDE` captures per tree, without capturing a child of a tree that is already included |
 | `AudioMixer` | Sums float samples and clamps them to -1..1 |
 | `NativeMessagingHost` | stdin/stdout transport, one connection |
@@ -48,13 +48,15 @@ The page creates the protected audio track. A `MediaStreamTrack` created in the 
 
 Strategies:
 
-- `SystemLoopback` when protection is off, or no blocked application is running.
-- `SingleProcessExclusion` when exactly one blocked identity is running and it has one root. The call uses `PROCESS_LOOPBACK_MODE_EXCLUDE_TARGET_PROCESS_TREE` with one `TargetProcessId`.
-- `AllowedProcessMix` otherwise. Several exclusions are not mixed, because each exclusion still contains the allowed audio and summing them would duplicate it. The pool opens `PROCESS_LOOPBACK_MODE_INCLUDE_TARGET_PROCESS_TREE` only for allowed roots that are producing audio and are not descendants of another included root. A root that contains a blocked process is left out, so the blocked audio does not leak.
+- `SystemLoopback` when protection is off, or when no blocked application is running. This is one capture of the Windows render mix.
+- `SingleProcessExclusion` when exactly one blocked identity has one process-tree root. The call is `PROCESS_LOOPBACK_MODE_EXCLUDE_TARGET_PROCESS_TREE` with that root as `TargetProcessId`. Child processes stay inside the excluded tree. The helper does not open a capture per allowed application for this case. An identity with more than one root does not use this path.
+- `AllowedProcessMix` when the block spans more than one process tree. It opens `PROCESS_LOOPBACK_MODE_INCLUDE_TARGET_PROCESS_TREE` only for allowed roots that are producing audio and are not descendants of another included root. A root that contains a blocked process is left out. Several exclusions are not mixed, because each exclusion still contains the allowed audio and summing them would duplicate it. After a share has entered this strategy, one later block does not switch it back.
+
+The extension sends a full `SET_AUDIO_POLICY` snapshot with a monotonic `revision`. The helper keeps only the latest desired policy. Older revisions are coalesced. The control thread is the only thread that opens, stops, or replaces a capture. The mix thread reads one published graph and does not rebuild because a toggle arrived. A source that is still allowed stays open. A single exclusion is opened before the previous graph is retired, so the allowed audio is not replaced by silence while that capture starts. Moving from one capture to `AllowedProcessMix` publishes silence first, because the previous capture still contains the newly blocked applications. Adding an allowed application starts that source before the graph swap. A packet is mixed only from sources that each have a full 20 ms block. A source that is behind is left in its buffer instead of being padded with silence inside the packet. An expected stop (policy change, strategy replacement, or the end of the share) is not an error. `Capture stopped unexpectedly.` is only for the published generation ending while the share should still be running.
 
 The internal format is 48 kHz, stereo, float. WASAPI may deliver a different mix format; conversion to that canonical format happens once, and the resampler keeps its remainder between packets. Conversion to `s16le` happens when the `AudioFrame` is built.
 
-The capture thread only copies samples into a ring. It does not encode or write stdout. The mix thread emits a packet when at least 960 frames are queued. It does not pad a short read with silence. A writer thread performs Base64 and Native Messaging. The page plays from an AudioWorklet ring with about 160 ms of prebuffer, so transport jitter is not the playback clock. `SHAREGUARD_DEBUG=1` logs one native audio line every two seconds. The page writes the matching line with `console.debug` during a share.
+The capture thread only copies samples into a ring. It does not encode or write stdout. The mix thread emits a packet when at least 960 frames are queued. It does not pad a short read with silence. While a published graph has no inputs, it sends silence so the same output sequence continues. A writer thread performs Base64 and Native Messaging. The page keeps one AudioWorklet and one `MediaStreamTrack` for the share. Policy changes do not recreate them. The page plays from an AudioWorklet ring with about 160 ms of prebuffer, so transport jitter is not the playback clock. `SHAREGUARD_DEBUG=1` logs one native audio line every two seconds, including policy revisions, coalesced updates, and expected versus unexpected stops. The page writes the matching line with `console.debug` during a share.
 
 If a capture that should enforce a block fails, the helper does not fall back to the full system mix. The extension removes the shared audio track and leaves the video.
 

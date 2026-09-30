@@ -47,9 +47,13 @@ void MessageDispatcher::handle(const std::string& json, const std::function<void
     AudioPolicy policy;
     policy.protectionEnabled = jsonBoolField(json, "protectionEnabled").value_or(true);
     policy.blockedIds = jsonStringArray(json, "blocked");
-    actions.applyPolicy(policy);
+    if (const std::optional<int> revision = jsonIntField(json, "revision")) {
+      if (*revision > 0) policy.clientRevision = static_cast<std::uint64_t>(*revision);
+    }
+    const std::uint64_t revision = actions.applyPolicy(policy);
+    const bool live = actions.capturing && actions.capturing();
     const char* strategy = actions.strategyName();
-    send(policyAppliedJson(strategy, actions.blockedCount()));
+    send(policyAppliedJson(strategy, actions.blockedCount(), revision, !live));
     return;
   }
   if (*type == "START_CAPTURE") {

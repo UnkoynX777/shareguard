@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -13,6 +14,7 @@ struct ProcessRule {
 struct AudioPolicy {
   bool protectionEnabled = true;
   std::vector<std::string> blockedIds;
+  std::uint64_t clientRevision = 0;
 
   bool blocks(const std::string& identity) const;
 };

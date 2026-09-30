@@ -18,6 +18,8 @@ let ready: Promise<void> | null = null;
 let snapshotSeen = false;
 let lastNotifyAt = 0;
 let hostMessage = "";
+let policyRevision = 0;
+let seenPolicyRevision = 0;
 const popups = new Set<ExtensionPort>();
 
 const session = new SessionController(native, () => {
@@ -36,9 +38,17 @@ native.addListener((message) => {
     processes.apply(message);
     publish();
   } else if (message.type === "AUDIO_POLICY_APPLIED") {
-    status.captureStrategy = message.captureStrategy;
-    status.blockedCount = message.blockedCount;
-    publish();
+    const revision = message.revision ?? 0;
+    if (revision > 0 && revision < seenPolicyRevision) {
+      publish();
+    } else {
+      if (revision > seenPolicyRevision) seenPolicyRevision = revision;
+      if (message.settled !== false) {
+        status.captureStrategy = message.captureStrategy;
+        status.blockedCount = message.blockedCount;
+      }
+      publish();
+    }
   } else if (message.type === "ERROR") {
     status.lastError = message.message;
     if (session.sharing()) notify(message.message);
@@ -113,7 +123,7 @@ async function handshake(): Promise<void> {
   if (!snapshotSeen) {
     await session.waitFor((message) => message.type === "PROCESS_SNAPSHOT" || message.type === "ERROR", 8000);
   }
-  native.send(policyMessage(rules));
+  native.send(policyMessage(rules, ++policyRevision));
   const applied = await session.waitFor(
     (message) => message.type === "AUDIO_POLICY_APPLIED" || message.type === "ERROR",
     8000,
@@ -142,7 +152,7 @@ async function applyRules(next: ExtensionRules): Promise<void> {
   };
   await saveRules(rules);
   if (native.connected()) {
-    native.send(policyMessage(rules));
+    native.send(policyMessage(rules, ++policyRevision));
     native.send(snapshotRequest(rules.showAllProcesses));
   }
   publish();

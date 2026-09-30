@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-09-30
+
+### Fixed
+
+- Blocking one application no longer replaces the shared mix with a separate capture of every allowed application. A single process tree stays on one exclusion, and rapid policy changes no longer stop the capture.
+
 ## [0.3.1] - 2026-09-30
 
 ### Fixed
@@ -26,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - A per-user installer that registers the native host for Chrome, Edge, and Firefox and copies the Chromium extension to `%LOCALAPPDATA%\ShareGuard\Extension\Chromium`.
 - GitHub Release packages `ShareGuard-Setup-vX.Y.Z-x64.exe`, `ShareGuard-Chromium-vX.Y.Z.zip`, and, when Mozilla unlisted signing is configured, `ShareGuard-Firefox-vX.Y.Z.xpi`.
 
-[Unreleased]: https://github.com/UnkoynX777/shareguard/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/UnkoynX777/shareguard/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/UnkoynX777/shareguard/releases/tag/v0.3.2
 [0.3.1]: https://github.com/UnkoynX777/shareguard/releases/tag/v0.3.1
 [0.3.0]: https://github.com/UnkoynX777/shareguard/releases/tag/v0.3.0

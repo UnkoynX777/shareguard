@@ -79,6 +79,8 @@ export interface NativePolicyApplied {
   type: "AUDIO_POLICY_APPLIED";
   captureStrategy: string;
   blockedCount: number;
+  revision?: number;
+  settled?: boolean;
 }
 
 export interface NativeCaptureState {
