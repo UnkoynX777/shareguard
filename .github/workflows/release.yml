@@ -1,0 +1,111 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check version files
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if ($tag.StartsWith("v")) { $tag = $tag.Substring(1) }
+          ./scripts/check-version.ps1 -Expected $tag
+
+      - name: Build native helper
+        shell: pwsh
+        run: ./scripts/build-native.ps1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: extension/package-lock.json
+
+      - name: Typecheck, test, and build the extension
+        working-directory: extension
+        run: |
+          npm ci
+          npm run typecheck
+          npm test
+          npm run build
+          npm run lint:firefox
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          $version = "6.7.3"
+          $expected = "9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732"
+          $installer = Join-Path $env:RUNNER_TEMP "innosetup-$version.exe"
+          Invoke-WebRequest -Uri "https://github.com/jrsoftware/issrc/releases/download/is-6_7_3/innosetup-$version.exe" -OutFile $installer
+          $actual = (Get-FileHash -Algorithm SHA256 $installer).Hash.ToLowerInvariant()
+          if ($actual -ne $expected) { throw "Inno Setup hash mismatch: $actual" }
+          $process = Start-Process -FilePath $installer -ArgumentList @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-") -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Inno Setup installer exited $($process.ExitCode)" }
+
+      - name: Compile installer
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe was not found." }
+          & $iscc .\installer\shareguard.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Collect release files
+        shell: pwsh
+        run: |
+          $version = "$(./scripts/check-version.ps1)".Trim()
+          $out = Join-Path $env:RUNNER_TEMP "shareguard-publish"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          Copy-Item ".\installer\Output\ShareGuard-Setup-v$version-x64.exe" $out
+          Copy-Item ".\release\shareguard-chromium.zip" (Join-Path $out "shareguard-chromium-v$version.zip")
+          Copy-Item ".\release\shareguard-firefox.zip" (Join-Path $out "shareguard-firefox-v$version.zip")
+          $sums = foreach ($file in Get-ChildItem $out -File) {
+            $hash = (Get-FileHash -Algorithm SHA256 $file.FullName).Hash.ToLowerInvariant()
+            "$hash  $($file.Name)"
+          }
+          Set-Content -Encoding ascii -Path (Join-Path $out "SHA256SUMS.txt") -Value $sums
+          $ref = $env:GITHUB_REF_NAME
+          $lines = @(
+            "ShareGuard $ref"
+            ""
+            "## Installation"
+            "Download ``ShareGuard-Setup-v$version-x64.exe`` below and run it."
+            "It installs the native helper for the current user and registers Native Messaging for Chrome, Edge, and Firefox."
+            ""
+            "The extension is not in a browser store yet."
+            "``shareguard-chromium-v$version.zip`` is the unpacked package for Chrome and Edge."
+            "``shareguard-firefox-v$version.zip`` is the temporary add-on package for Firefox."
+            ""
+            "Verify ``SHA256SUMS.txt`` before you run the installer."
+            "The installer is not code-signed."
+            ""
+            "See CHANGELOG.md for the notes on this version."
+          )
+          Set-Content -Encoding utf8 -Path (Join-Path $out "notes.md") -Value $lines
+          "out=$out" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" `
+            --repo "${{ github.repository }}" `
+            --title "ShareGuard ${{ github.ref_name }}" `
+            --notes-file "$env:out\notes.md" `
+            "$env:out\ShareGuard-Setup-*.exe" `
+            "$env:out\shareguard-chromium-*.zip" `
+            "$env:out\shareguard-firefox-*.zip" `
+            "$env:out\SHA256SUMS.txt"

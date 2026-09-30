@@ -1,0 +1,24 @@
+{
+  "name": "shareguard-extension",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:chromium": "node scripts/build.mjs chromium",
+    "build:firefox": "node scripts/build.mjs firefox",
+    "dev": "node scripts/build.mjs --watch",
+    "dev:chromium": "node scripts/build.mjs chromium --watch",
+    "dev:firefox": "node scripts/build.mjs firefox --watch",
+    "firefox": "npm run build:firefox && web-ext run --source-dir dist/firefox",
+    "lint:firefox": "web-ext lint --source-dir dist/firefox",
+    "test": "node --experimental-strip-types --test test/display-media-contract.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.326",
+    "esbuild": "^0.25.5",
+    "typescript": "^5.8.3",
+    "web-ext": "^8.9.0"
+  }
+}

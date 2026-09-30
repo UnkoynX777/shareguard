@@ -1,0 +1,7 @@
+{
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAl6DZgPd9ZEF7fiAXEV8mGfyLLgesNvC5KJGgeGffKf4NndZzQO7OdfFj70yqjqXkHwbqlwbl2RkG07xnLX32APDm9EcNkN2HYfF3NZDbX5W0ToPMK1UMeraxA33q6osiQn45cYrayU2gppn8lDtcflyXLWSh17lJIANCgOICpCTVXjOBuvfB3Ah+3JiwlufwLbymyXP7EnExMUa3aD75PjZzO8Qf9EmJ3MUHZPlnwMWZSCQMmRB+pqr6EqoQlvJz/wiQvhIpq+f5xyuQL0YRaILJOgV/M/NI6hEjcIa9Oq/LknpEBGUdfkQ+FkGA2eqbvL+CKbysGdP3jptryMB38wIDAQAB",
+  "minimum_chrome_version": "116",
+  "background": {
+    "service_worker": "background.js"
+  }
+}

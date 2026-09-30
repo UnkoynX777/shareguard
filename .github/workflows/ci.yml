@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check version files
+        shell: pwsh
+        run: ./scripts/check-version.ps1
+
+      - name: Build native helper
+        shell: pwsh
+        run: ./scripts/build-native.ps1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: extension/package-lock.json
+
+      - name: Typecheck, test, and build the extension
+        working-directory: extension
+        run: |
+          npm ci
+          npm run typecheck
+          npm test
+          npm run build
+          npm run lint:firefox
+
+      - name: Upload extension packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-packages
+          path: |
+            release/shareguard-chromium.zip
+            release/shareguard-firefox.zip
+          if-no-files-found: error

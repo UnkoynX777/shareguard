@@ -1,0 +1,65 @@
+#include "audio/capture/ProcessCapturePool.hpp"
+
+#include "logging/Logger.hpp"
+
+#include <unordered_set>
+
+namespace shareguard {
+
+bool ProcessCapturePool::sync(const std::vector<std::uint32_t>& rootPids, std::string& error) {
+  std::unordered_set<std::uint32_t> desired(rootPids.begin(), rootPids.end());
+  for (auto it = sources_.begin(); it != sources_.end();) {
+    if (!desired.contains(it->first)) {
+      Logger::info("capture source destroyed");
+      it = sources_.erase(it);
+    } else {
+      ++it;
+    }
+  }
+
+  bool anyFailure = false;
+  for (const std::uint32_t root : rootPids) {
+    if (sources_.contains(root)) {
+      continue;
+    }
+    auto source = std::make_unique<CaptureSource>();
+    std::string sourceError;
+    if (!source->startProcess(root, false, sourceError)) {
+      Logger::error(sourceError);
+      error = sourceError;
+      anyFailure = true;
+      continue;
+    }
+    Logger::info("capture source created");
+    sources_.emplace(root, std::move(source));
+  }
+  return !anyFailure || !sources_.empty() || rootPids.empty();
+}
+
+bool ProcessCapturePool::matches(const std::vector<std::uint32_t>& rootPids) const {
+  if (sources_.size() != rootPids.size()) {
+    return false;
+  }
+  for (const std::uint32_t root : rootPids) {
+    const auto it = sources_.find(root);
+    if (it == sources_.end() || !it->second || !it->second->running()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+std::vector<AudioRingBuffer*> ProcessCapturePool::buffers() {
+  std::vector<AudioRingBuffer*> output;
+  output.reserve(sources_.size());
+  for (auto& entry : sources_) {
+    if (entry.second && entry.second->running()) {
+      output.push_back(&entry.second->buffer());
+    }
+  }
+  return output;
+}
+
+void ProcessCapturePool::stop() { sources_.clear(); }
+
+}

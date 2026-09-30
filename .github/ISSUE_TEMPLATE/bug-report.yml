@@ -1,0 +1,78 @@
+name: Bug report
+description: ShareGuard did something it should not do.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: Remove personal names, account names, and audio recordings before you paste logs.
+  - type: input
+    id: version
+    attributes:
+      label: ShareGuard version
+      description: The release tag, or the version shown in the extension manifest.
+      placeholder: 0.3.0
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      description: For example, Windows 11 24H2, or the output of `winver`.
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      options:
+        - Google Chrome
+        - Microsoft Edge
+        - Mozilla Firefox
+        - More than one
+    validations:
+      required: true
+  - type: input
+    id: browser-version
+    attributes:
+      label: Browser version
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Turn protection on
+        2. Block an application
+        3. Start a screen share with audio
+    validations:
+      required: true
+  - type: input
+    id: blocked
+    attributes:
+      label: Blocked applications
+      description: Executable names only, such as Discord.exe. Leave empty if you did not block anything.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Optional. `%LOCALAPPDATA%\ShareGuard\shareguard.log` does not contain audio samples. Remove anything private.
+      render: text
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context

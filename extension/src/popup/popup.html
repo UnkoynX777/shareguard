@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ShareGuard</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>ShareGuard</h1>
+        <p class="status">
+          <span id="dot" data-tone="off"></span>
+          <span id="protection">Protection disabled</span>
+        </p>
+      </header>
+      <label class="master">
+        <input id="protection-toggle" type="checkbox" />
+        <span>ShareGuard Protection</span>
+      </label>
+      <dl class="facts">
+        <div>
+          <dt>Native</dt>
+          <dd id="native">Unavailable</dd>
+        </div>
+        <div>
+          <dt>Sharing</dt>
+          <dd id="sharing">Not sharing</dd>
+        </div>
+        <div>
+          <dt>Blocked</dt>
+          <dd id="blocked">0</dd>
+        </div>
+      </dl>
+      <input id="search" type="search" placeholder="Search applications..." />
+      <div id="list"></div>
+      <label class="show-all">
+        <input id="show-all" type="checkbox" />
+        <span>Show all processes</span>
+      </label>
+      <p id="message"></p>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

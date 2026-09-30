@@ -1,0 +1,153 @@
+:root {
+  color: #1c2430;
+  background: #f4f6f8;
+  font: 13px/1.35 "Segoe UI", sans-serif;
+}
+
+body {
+  margin: 0;
+  width: 320px;
+}
+
+main {
+  padding: 14px 14px 12px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  font-weight: 650;
+}
+
+#dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #8b97a6;
+}
+
+#dot[data-tone="ok"] {
+  background: #0f7b4c;
+}
+
+#dot[data-tone="warn"] {
+  background: #9f1239;
+}
+
+.master,
+.show-all {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-weight: 650;
+}
+
+.facts {
+  margin: 10px 0 0;
+}
+
+.facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-top: 1px solid #e4e8ee;
+}
+
+dt {
+  color: #5c6b7a;
+}
+
+dd {
+  margin: 0;
+  font-weight: 650;
+}
+
+#search {
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 12px;
+  padding: 7px 8px;
+  border: 1px solid #d5dbe3;
+  border-radius: 6px;
+}
+
+#list {
+  max-height: 360px;
+  margin-top: 10px;
+  overflow: auto;
+}
+
+.section {
+  margin: 8px 0 4px;
+  color: #5c6b7a;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 1px solid #e4e8ee;
+}
+
+.name {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exe {
+  color: #5c6b7a;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+button.block,
+button.allow {
+  flex: none;
+  min-width: 76px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button.block {
+  color: #fff;
+  background: #9f1239;
+}
+
+button.allow {
+  color: #0f7b4c;
+  background: #e5f6ee;
+}
+
+.empty {
+  margin: 8px 0;
+  color: #5c6b7a;
+}
+
+#message {
+  min-height: 1.2em;
+  margin: 8px 0 0;
+  color: #9f1239;
+  font-size: 12px;
+}
