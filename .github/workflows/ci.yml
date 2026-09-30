@@ -14,7 +14,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Check bilingual documentation
         run: node ./scripts/check-docs.mjs
@@ -28,7 +28,7 @@ jobs:
         run: ./scripts/build-native.ps1
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -50,14 +50,14 @@ jobs:
           ./scripts/validate-packages.ps1
 
       - name: Upload Chromium package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: chromium-package
           path: release/ShareGuard-Chromium-*.zip
           if-no-files-found: error
 
       - name: Upload Firefox development build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: firefox-dev-build
           path: extension/dist/firefox
