@@ -16,9 +16,9 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/chrome": "^0.0.326",
-    "esbuild": "^0.25.5",
-    "typescript": "^5.8.3",
-    "web-ext": "^8.9.0"
+    "@types/chrome": "^0.3.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2",
+    "web-ext": "^10.7.0"
   }
 }
