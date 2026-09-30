@@ -15,24 +15,30 @@ if ($Version -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
 Set-Content -Encoding ascii -Path $versionFile -Value $Version -NoNewline
 Add-Content -Encoding ascii -Path $versionFile -Value ""
 
-$base = Get-Content -Raw (Join-Path $root "extension\manifests\manifest.base.json")
-$base = [regex]::Replace($base, '"version":\s*"[0-9]+\.[0-9]+\.[0-9]+"', "`"version`": `"$Version`"")
-Set-Content -Encoding utf8 -NoNewline -Path (Join-Path $root "extension\manifests\manifest.base.json") -Value $base
+function Write-Utf8([string]$Path, [string]$Value) {
+  $Value = $Value.TrimStart([char]0xFEFF)
+  $utf8 = New-Object System.Text.UTF8Encoding $false
+  [System.IO.File]::WriteAllText($Path, $Value, $utf8)
+}
 
-$package = Get-Content -Raw (Join-Path $root "extension\package.json")
-$package = [regex]::Replace($package, '"version":\s*"[0-9]+\.[0-9]+\.[0-9]+"', "`"version`": `"$Version`"")
-Set-Content -Encoding utf8 -NoNewline -Path (Join-Path $root "extension\package.json") -Value $package
+$basePath = Join-Path $root "extension\manifests\manifest.base.json"
+$base = [regex]::Replace((Get-Content -Raw $basePath), '"version":\s*"[0-9]+\.[0-9]+\.[0-9]+"', "`"version`": `"$Version`"")
+Write-Utf8 $basePath $base
 
-$cmake = Get-Content -Raw (Join-Path $root "native\CMakeLists.txt")
-$cmake = [regex]::Replace($cmake, 'VERSION\s+[0-9]+\.[0-9]+\.[0-9]+', "VERSION $Version")
-Set-Content -Encoding utf8 -NoNewline -Path (Join-Path $root "native\CMakeLists.txt") -Value $cmake
+$packagePath = Join-Path $root "extension\package.json"
+$package = [regex]::Replace((Get-Content -Raw $packagePath), '"version":\s*"[0-9]+\.[0-9]+\.[0-9]+"', "`"version`": `"$Version`"")
+Write-Utf8 $packagePath $package
 
-$protocol = Get-Content -Raw (Join-Path $root "native\src\messaging\Protocol.hpp")
-$protocol = [regex]::Replace($protocol, 'kNativeVersion = "[0-9]+\.[0-9]+\.[0-9]+"', "kNativeVersion = `"$Version`"")
-Set-Content -Encoding utf8 -NoNewline -Path (Join-Path $root "native\src\messaging\Protocol.hpp") -Value $protocol
+$cmakePath = Join-Path $root "native\CMakeLists.txt"
+$cmake = [regex]::Replace((Get-Content -Raw $cmakePath), 'VERSION\s+[0-9]+\.[0-9]+\.[0-9]+', "VERSION $Version")
+Write-Utf8 $cmakePath $cmake
 
-$iss = Get-Content -Raw (Join-Path $root "installer\shareguard.iss")
-$iss = [regex]::Replace($iss, '#define AppVersion "[0-9]+\.[0-9]+\.[0-9]+"', "#define AppVersion `"$Version`"")
-Set-Content -Encoding utf8 -NoNewline -Path (Join-Path $root "installer\shareguard.iss") -Value $iss
+$protocolPath = Join-Path $root "native\src\messaging\Protocol.hpp"
+$protocol = [regex]::Replace((Get-Content -Raw $protocolPath), 'kNativeVersion = "[0-9]+\.[0-9]+\.[0-9]+"', "kNativeVersion = `"$Version`"")
+Write-Utf8 $protocolPath $protocol
+
+$issPath = Join-Path $root "installer\shareguard.iss"
+$iss = [regex]::Replace((Get-Content -Raw $issPath), '#define AppVersion "[0-9]+\.[0-9]+\.[0-9]+"', "#define AppVersion `"$Version`"")
+Write-Utf8 $issPath $iss
 
 Write-Output $Version

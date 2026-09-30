@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "audio/format/AudioFrame.hpp"
 #include "policy/AudioPolicy.hpp"

@@ -1,4 +1,4 @@
-﻿#define AppName "ShareGuard"
+#define AppName "ShareGuard"
 #define AppVersion "0.3.1"
 #define AppPublisher "UnkoynX777"
 #define HostName "com.shareguard.native"
