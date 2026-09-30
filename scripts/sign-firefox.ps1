@@ -27,12 +27,16 @@ $artifacts = Join-Path $root "release\amo"
 if (Test-Path $artifacts) { Remove-Item $artifacts -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $artifacts | Out-Null
 
+$env:WEB_EXT_API_KEY = $env:AMO_JWT_ISSUER
+$env:WEB_EXT_API_SECRET = $env:AMO_JWT_SECRET
 Push-Location (Join-Path $root "extension")
 try {
-  & npx --no-install web-ext sign --channel unlisted --source-dir "dist\firefox" --artifacts-dir $artifacts
+  & npx --no-install web-ext sign --channel unlisted --source-dir "dist\firefox" --artifacts-dir $artifacts --timeout 900000 --approval-timeout 900000
   if ($LASTEXITCODE -ne 0) { throw "web-ext sign failed." }
 } finally {
   Pop-Location
+  Remove-Item Env:WEB_EXT_API_KEY -ErrorAction SilentlyContinue
+  Remove-Item Env:WEB_EXT_API_SECRET -ErrorAction SilentlyContinue
 }
 
 $signed = Get-ChildItem $artifacts -Filter *.xpi | Select-Object -First 1
